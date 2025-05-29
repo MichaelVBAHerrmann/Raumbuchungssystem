@@ -13,21 +13,43 @@ struct RegistrationForm: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Registrierenn")
+            Text("Registrieren")
                 .font(.title2)
-                .bold()
+                .fontWeight(.bold)
+                .padding(.bottom, 20)
+                .foregroundColor(.black)
 
-            TextField("Benutzername festlegen", text: $username)
-                .textFieldStyle(.plain)
-                .padding()
-                .background(Color.white)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.gray, lineWidth: 1))
+            // Benutzername‑Feld – gleicher Stil wie im LoginForm
+            ZStack(alignment: .leading) {
+                if username.isEmpty {
+                    Text("Benutzername festlegen")
+                        .foregroundColor(Color.gray.opacity(0.7))   // dunkles Grau für Placeholder
+                        .padding(.leading, 16)
+                }
+                TextField("", text: $username)
+                    .textFieldStyle(.plain)
+                    .padding(12)
+                    .foregroundColor(.black)                       // eingegebener Text in Schwarz
+            }
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.4), lineWidth: 1))
 
-            SecureField("Passwort festlegen", text: $password)
-                .textFieldStyle(.plain)
-                .padding()
-                .background(Color.white)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.gray, lineWidth: 1))
+            // Passwort‑Feld – gleicher Stil wie im LoginForm
+            ZStack(alignment: .leading) {
+                if password.isEmpty {
+                    Text("Passwort festlegen")
+                        .foregroundColor(Color.gray.opacity(0.7))
+                        .padding(.leading, 16)
+                }
+                SecureField("", text: $password)
+                    .textFieldStyle(.plain)
+                    .padding(12)
+                    .foregroundColor(.black)
+            }
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.4), lineWidth: 1))
 
             // Aktionen
             HStack(spacing: 16) {
@@ -37,14 +59,16 @@ struct RegistrationForm: View {
                     Text("Abbrechen")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.gray.opacity(0.3))
+                        .padding(.vertical, 14)
+                        .background(Color.gray.opacity(0.8))
                         .foregroundColor(.black)
-                        .cornerRadius(8)
+                        .cornerRadius(10)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.black, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.black.opacity(0.25), lineWidth: 1)
                         )
+                        .shadow(color: Color.black.opacity(0.4),
+                                radius: 4, x: 0, y: 3)
                 }
                 .buttonStyle(PlainButtonStyle())
 
@@ -55,14 +79,16 @@ struct RegistrationForm: View {
                     Text("Anmeldung abschließen")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.gray.opacity(0.3))
+                        .padding(.vertical, 14)
+                        .background(Color.gray.opacity(0.8))
                         .foregroundColor(.black)
-                        .cornerRadius(8)
+                        .cornerRadius(10)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.black, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.black.opacity(0.25), lineWidth: 1)
                         )
+                        .shadow(color: Color.black.opacity(0.4),
+                                radius: 4, x: 0, y: 3)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
