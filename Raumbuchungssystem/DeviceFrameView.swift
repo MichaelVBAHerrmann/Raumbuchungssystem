@@ -12,9 +12,9 @@ struct DeviceFrameView<Content: View>: View {
 
     // Comic-Stil Parameter (anpassbar)
     let deviceBodyColor: Color = Color.gray.opacity(0.2) // Heller Grauton für das Gehäuse
-    let screenBackgroundColor: Color = Color.gray.opacity(0.3) // leicht transparentes Grau, damit Hintergrund durchscheint
+    let screenBackgroundColor: Color = Color.gray.opacity(0.6) // leicht transparentes Grau, damit Hintergrund durchscheint
     let notchColor: Color = .black
-    let buttonColor: Color = Color.gray.opacity(0.9)
+    let buttonColor: Color = Color.gray.opacity(2)
     let outlineColor: Color = .black
     let comicOutlineWidth: CGFloat = 2.0 // Dicke der Hauptumrisse
     let buttonOutlineWidth: CGFloat = 1.5 // Etwas dünner für Knöpfe
@@ -26,7 +26,7 @@ struct DeviceFrameView<Content: View>: View {
     // Notch/Dynamic Island Proportionen (relativ zur Bildschirmbreite/-höhe des DeviceFrameView)
     let notchWidthFactor: CGFloat = 0.35     // Breite der Notch
     let notchHeightFactor: CGFloat = 0.016   // Höhe der Notch (relativ zur Gerätehöhe)
-    let notchCornerRadiusFactor: CGFloat = 0.3 // Abrundung der Notch (relativ zur Notch-Höhe)
+    let notchCornerRadiusFactor: CGFloat = 0.4 // Abrundung der Notch (relativ zur Notch-Höhe)
 
     // Seitenknopf-Proportionen (relativ zur Gerätehöhe)
     let sideButtonWidthFactor: CGFloat = 0.018 // Dicke der Knöpfe
