@@ -18,22 +18,39 @@ struct LoginForm: View {
         VStack(spacing: 15) { // Etwas mehr Platz
             Text("Willkommen!") // Titel
                 .font(.largeTitle)
-                .fontWeight(.thin)
+                .fontWeight(.bold)
                 .padding(.bottom, 20)
-                .foregroundColor(Color.primary.opacity(0.8))
+                .foregroundColor(.black)
 
 
-            TextField("Benutzername", text: $username)
-                .textFieldStyle(.plain)
-                .padding(12)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10)) // Moderner Look
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.4), lineWidth: 1))
 
-            SecureField("Passwort", text: $password)
-                .textFieldStyle(.plain)
-                .padding(12)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.4), lineWidth: 1))
+            ZStack(alignment: .leading) {
+                if username.isEmpty {
+                    Text("Benutzername")
+                        .foregroundColor(Color.gray.opacity(0.7))  // dunkles Grau für Placeholder
+                        .padding(.leading, 16)
+                }
+                TextField("", text: $username)
+                    .textFieldStyle(.plain)
+                    .padding(12)
+                    .foregroundColor(.black)                      // eingegebener Text in Schwarz
+            }
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.4), lineWidth: 1))
+
+            ZStack(alignment: .leading) {
+                if password.isEmpty {
+                    Text("Passwort")
+                        .foregroundColor(Color.gray.opacity(0.7)) // dunkles Grau für Placeholder
+                        .padding(.leading, 16)
+                }
+                SecureField("", text: $password)
+                    .textFieldStyle(.plain)
+                    .padding(12)
+                    .foregroundColor(.black)                     // eingegebener Text in Schwarz
+            }
+            .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.4), lineWidth: 1))
 
             Button {
                 performLogin()
@@ -42,10 +59,15 @@ struct LoginForm: View {
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14) // Etwas höherer Button
-                    .background(Color.accentColor.opacity(0.8)) // Verwendung der Akzentfarbe
-                    .foregroundColor(.white)
-                    .cornerRadius(10) // Konsistente Eckradien
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.1), lineWidth: 1))
+                    .background(Color.gray.opacity(0.8))                 // dunkleres, transparenteres Grau
+                    .foregroundColor(.black)
+                    .cornerRadius(10)
+                    .overlay(                                            // dezente Kontur‑Linie
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.black.opacity(0.25), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.4),             // Comic‑mäßiger 3‑D‑Effekt
+                            radius: 4, x: 0, y: 3)
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.top, 10) // Abstand nach oben
@@ -54,14 +76,19 @@ struct LoginForm: View {
             Button {
                 onRegister() // Ruft die onRegister Closure auf, die in StartView isRegistering = true setzt
             } label: {
-                Text("Neuen Account erstellen")
+                Text("Registrieren")
                     .fontWeight(.medium)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.green.opacity(0.7)) // Grüne Farbe
-                    .foregroundColor(.white)
+                    .background(Color.gray.opacity(0.8))                 // dunkleres, transparenteres Grau
+                    .foregroundColor(.black)
                     .cornerRadius(10)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.1), lineWidth: 1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.black.opacity(0.25), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.4),
+                            radius: 4, x: 0, y: 3)
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.top, 8)
@@ -74,8 +101,18 @@ struct LoginForm: View {
                 showingAlert = true
             } label: {
                 Text("Passwort vergessen?")
-                    .font(.footnote)
-                    .foregroundColor(Color.accentColor) // Akzentfarbe für den Link
+                    .fontWeight(.medium)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.gray.opacity(0.8)) // dunkles, leicht transparentes Grau
+                    .foregroundColor(.black)
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.black.opacity(0.25), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.4),
+                            radius: 4, x: 0, y: 3)
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.top, 15)
