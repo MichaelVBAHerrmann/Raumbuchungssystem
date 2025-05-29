@@ -19,4 +19,3 @@ struct RaumBuchungssystemApp: App {
     }
 }
 
-//Test 2
