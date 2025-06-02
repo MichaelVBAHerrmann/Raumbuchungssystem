@@ -19,7 +19,7 @@ struct Strichmännchen: View {
             Color(red: 0.1, green: 0.1, blue: 0.2).ignoresSafeArea()
 
             // Desk
-            DeskView()
+            DeskViews()
                 .offset(y: 100) // Adjust position as needed
 
             // Laptop
@@ -145,7 +145,7 @@ struct StickFigureView: View {
 }
 
 // MARK: - Desk View
-struct DeskView: View {
+struct DeskViews: View {
     var body: some View {
         ZStack {
             // Tabletop
