@@ -5,35 +5,34 @@ struct LoginForm: View {
     @Binding var username: String
     @Binding var password: String
     @EnvironmentObject private var userStore: UserStore
-    // Kein onLogin Callback mehr direkt hier, da wir Alerts verwenden
-    var onRegister: () -> Void // Callback, um isRegistering in StartView zu setzen
+    var onRegister: () -> Void
 
-    // Für Alerts
+    // Alter Alert-State wird nicht mehr für "Passwort vergessen" benötigt
     @State private var showingAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
-
+    
+    // Neuer State, um den ForgotPassword-Sheet anzuzeigen
+    @State private var showingForgotPasswordSheet = false
 
     var body: some View {
-        VStack(spacing: 15) { // Etwas mehr Platz
-            Text("Willkommen!") // Titel
+        VStack(spacing: 15) {
+            Text("Willkommen!")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .padding(.bottom, 20)
                 .foregroundColor(.black)
 
-
-
             ZStack(alignment: .leading) {
                 if username.isEmpty {
                     Text("Benutzername")
-                        .foregroundColor(Color.gray.opacity(0.7))  // dunkles Grau für Placeholder
+                        .foregroundColor(Color.gray.opacity(0.7))
                         .padding(.leading, 16)
                 }
                 TextField("", text: $username)
                     .textFieldStyle(.plain)
                     .padding(12)
-                    .foregroundColor(.black)                      // eingegebener Text in Schwarz
+                    .foregroundColor(.black)
             }
             .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.4), lineWidth: 1))
@@ -41,13 +40,13 @@ struct LoginForm: View {
             ZStack(alignment: .leading) {
                 if password.isEmpty {
                     Text("Passwort")
-                        .foregroundColor(Color.gray.opacity(0.7)) // dunkles Grau für Placeholder
+                        .foregroundColor(Color.gray.opacity(0.7))
                         .padding(.leading, 16)
                 }
                 SecureField("", text: $password)
                     .textFieldStyle(.plain)
                     .padding(12)
-                    .foregroundColor(.black)                     // eingegebener Text in Schwarz
+                    .foregroundColor(.black)
             }
             .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.4), lineWidth: 1))
@@ -58,29 +57,28 @@ struct LoginForm: View {
                 Text("Login")
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14) // Etwas höherer Button
-                    .background(Color.gray.opacity(0.8))                 // dunkleres, transparenteres Grau
+                    .padding(.vertical, 14)
+                    .background(Color.gray.opacity(0.8))
                     .foregroundColor(.black)
                     .cornerRadius(10)
-                    .overlay(                                            // dezente Kontur‑Linie
+                    .overlay(
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.black.opacity(0.25), lineWidth: 1)
                     )
-                    .shadow(color: Color.black.opacity(0.4),             // Comic‑mäßiger 3‑D‑Effekt
+                    .shadow(color: Color.black.opacity(0.4),
                             radius: 4, x: 0, y: 3)
             }
             .buttonStyle(PlainButtonStyle())
-            .padding(.top, 10) // Abstand nach oben
+            .padding(.top, 10)
 
-            // Registrieren-Button
             Button {
-                onRegister() // Ruft die onRegister Closure auf, die in StartView isRegistering = true setzt
+                onRegister()
             } label: {
                 Text("Registrieren")
                     .fontWeight(.medium)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.gray.opacity(0.8))                 // dunkleres, transparenteres Grau
+                    .background(Color.gray.opacity(0.8))
                     .foregroundColor(.black)
                     .cornerRadius(10)
                     .overlay(
@@ -93,18 +91,15 @@ struct LoginForm: View {
             .buttonStyle(PlainButtonStyle())
             .padding(.top, 8)
 
-
+            // GEÄNDERTER BUTTON: Ruft jetzt den Sheet auf
             Button {
-                // TODO: Reset-Logik implementieren
-                alertTitle = "Info"
-                alertMessage = "Die Funktion 'Passwort vergessen' ist noch nicht implementiert."
-                showingAlert = true
+                showingForgotPasswordSheet = true // Setzt den State, um den Sheet zu öffnen
             } label: {
                 Text("Passwort vergessen?")
                     .fontWeight(.medium)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.gray.opacity(0.8)) // dunkles, leicht transparentes Grau
+                    .background(Color.gray.opacity(0.8))
                     .foregroundColor(.black)
                     .cornerRadius(10)
                     .overlay(
@@ -117,25 +112,24 @@ struct LoginForm: View {
             .buttonStyle(PlainButtonStyle())
             .padding(.top, 15)
         }
-        .padding(20) // Gesamt-Padding für das Formular
-        // Kein eigener Hintergrund für LoginForm, da es im DeviceFrameView platziert wird,
-        // welches screenBackgroundColor hat.
+        .padding(20)
+        // Der Alert für Login-Fehler bleibt erhalten
         .alert(isPresented: $showingAlert) {
             Alert(title: Text(alertTitle), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+        // NEUER MODIFIER: Präsentiert die ForgotPasswordView als Sheet
+        .sheet(isPresented: $showingForgotPasswordSheet) {
+            ForgotPasswordView()
         }
     }
 
     func performLogin() {
-        // UserDefaults direkt abfragen, da UserStore.login bereits die Prüfung macht
-        // und wir hier nur das Pop-up steuern wollen.
-        // Die userStore.login Methode gibt true oder false zurück.
-        let loginSuccess = userStore.login(username: username, password: password) //
+        let loginSuccess = userStore.login(username: username, password: password)
 
         if loginSuccess {
             alertTitle = "Login erfolgreich"
             alertMessage = "Passwort korrekt."
         } else {
-            // Prüfen, ob überhaupt Benutzer registriert sind, um eine bessere Fehlermeldung zu geben.
             if userStore.users.isEmpty {
                 alertTitle = "Fehler"
                 alertMessage = "Keine Benutzer registriert. Bitte erstellen Sie zuerst einen Account."

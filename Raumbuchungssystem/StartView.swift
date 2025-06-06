@@ -32,14 +32,17 @@ struct StartView: View {
                         .frame(maxWidth: geo.size.width * 0.3)
                         .position(x: geo.size.width / 2, y: geo.size.height / 2)
                 } else {
-                    // iPhone in der Mitte, max 20 % der Breite
+                    // iPhone in der Mitte
                     DeviceFrameView {
                         LoginForm(username: $username,
                                   password: $password,
                                   onRegister: { isRegistering = true })
                             .padding()
                     }
-                    .frame(maxWidth: geo.size.width * 0.2)
+                    // MODIFIZIERTE ZEILE:
+                    // Wir nehmen 35 % der Fensterbreite, aber nicht weniger als 280 Pixel.
+                    // Dies verhindert, dass das iPhone bei sehr kleinen Fenstern unbrauchbar klein wird.
+                    .frame(maxWidth: max(geo.size.width * 0.35, 280))
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
                 }
             }
