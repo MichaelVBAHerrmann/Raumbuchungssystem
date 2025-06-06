@@ -4,6 +4,7 @@
 //
 //  Created by Michael Herrmann on 26.05.25.
 //
+
 // MARK: - Fachliche Funktionalität
 ///
 /// Dies ist die Start-Ansicht, die einem nicht angemeldeten Benutzer präsentiert wird. Sie dient als
@@ -35,9 +36,15 @@
 import SwiftUI
 
 struct StartView: View {
+    @EnvironmentObject private var userStore: UserStore
+    
     @State private var username = ""
     @State private var password = ""
     @State private var isRegistering = false
+
+    // State für Fehlermeldungen bei der Registrierung
+    @State private var registrationError = ""
+    @State private var showingRegistrationAlert = false
 
     var body: some View {
         GeometryReader { geo in
@@ -53,11 +60,31 @@ struct StartView: View {
                 // Inhaltsschicht
                 if isRegistering {
                     // Registrierungsmaske in der Mitte
-                    RegistrationForm(username: $username,
-                                     password: $password,
-                                     onCancel: { isRegistering = false })
-                        .frame(maxWidth: geo.size.width * 0.3)
-                        .position(x: geo.size.width / 2, y: geo.size.height / 2)
+                    RegistrationForm(
+                        username: $username,
+                        password: $password,
+                        // --- HIER WIRD DIE REGISTRIERUNGSLOGIK IMPLEMENTIERT ---
+                        onRegister: {
+                            // Versuche, den Benutzer zu registrieren
+                            let success = userStore.register(username: username, password: password)
+                            
+                            // Wenn nicht erfolgreich (Benutzername existiert bereits)
+                            if !success {
+                                registrationError = "Dieser Benutzername ist bereits vergeben."
+                                showingRegistrationAlert = true
+                            }
+                            // Bei Erfolg wird der Benutzer automatisch eingeloggt und die `MainView`
+                            // wechselt zur `CalendarBookingView`. Ein manuelles Schließen
+                            // des Formulars ist nicht nötig.
+                        },
+                        onCancel: { isRegistering = false }
+                    )
+                    .frame(maxWidth: geo.size.width * 0.3)
+                    .position(x: geo.size.width / 2, y: geo.size.height / 2)
+                    .alert("Registrierung fehlgeschlagen", isPresented: $showingRegistrationAlert, actions: {}, message: {
+                        Text(registrationError)
+                    })
+                    
                 } else {
                     // iPhone in der Mitte
                     DeviceFrameView {
@@ -66,9 +93,6 @@ struct StartView: View {
                                   onRegister: { isRegistering = true })
                             .padding()
                     }
-                    // MODIFIZIERTE ZEILE:
-                    // Wir nehmen 35 % der Fensterbreite, aber nicht weniger als 280 Pixel.
-                    // Dies verhindert, dass das iPhone bei sehr kleinen Fenstern unbrauchbar klein wird.
                     .frame(maxWidth: max(geo.size.width * 0.35, 280))
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
                 }

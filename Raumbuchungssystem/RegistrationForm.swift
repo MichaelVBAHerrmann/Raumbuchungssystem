@@ -4,6 +4,9 @@
 //
 //  Created by Michael Herrmann on 28.05.25.
 //
+
+import SwiftUI
+
 // MARK: - Fachliche Funktionalität
 ///
 /// Stellt eine Benutzeroberfläche zur Verfügung, über die sich neue Benutzer mit einem
@@ -12,31 +15,30 @@
 // MARK: - Technische Funktionalität
 ///
 /// Eine SwiftUI `View`, die über `@Binding`-Variablen die Eingaben für `username` und `password`
-/// von der übergeordneten `StartView` empfängt. Ein `onCancel` Callback wird genutzt,
-/// um der `StartView` mitzuteilen, dass die Registrierungsansicht geschlossen werden soll.
+/// von der übergeordneten `StartView` empfängt. Callbacks (`onRegister`, `onCancel`) werden genutzt,
+/// um der `StartView` die Aktionen des Benutzers mitzuteilen.
 /// Die eigentliche Speicherlogik der Registrierung ist nicht Teil dieses Moduls.
 ///
 // MARK: - Besonderheiten
 ///
 /// Das Design der Eingabefelder und Buttons ist an das der `LoginForm` angelehnt, um ein
-/// konsistentes Erscheinungsbild zu gewährleisten. Der Button "Anmeldung abschließen" führt
-/// aktuell dieselbe Aktion aus wie "Abbrechen". Die Logik zum Aufruf von `userStore.register`
-/// muss in der übergeordneten View implementiert werden.
+/// konsistentes Erscheinungsbild zu gewährleisten. Die Logik zum Aufruf von `userStore.register`
+/// wird in der übergeordneten View implementiert.
 ///
 // MARK: - Zusammenspiel und Abhängigkeiten
 ///
 /// - **Wird enthalten von:** `StartView`.
-/// - **Kommuniziert mit `StartView`:** Empfängt Daten über `@Binding`s und sendet ein "Abbrechen"-Signal
-///   über den `onCancel` Callback.
+/// - **Kommuniziert mit `StartView`:** Empfängt Daten über `@Binding`s und sendet Signale über die
+///   `onRegister` und `onCancel` Callbacks.
 /// - **Indirekte Abhängigkeit:** Die hier erfassten Daten sind für den `UserStore` bestimmt,
 ///   aber es gibt keine direkte Verbindung von diesem Modul zum `UserStore`.
 ///
 
-import SwiftUI
-// MARK: - RegistrationForm
 struct RegistrationForm: View {
     @Binding var username: String
     @Binding var password: String
+    
+    var onRegister: () -> Void
     var onCancel: () -> Void
 
     var body: some View {
@@ -47,23 +49,21 @@ struct RegistrationForm: View {
                 .padding(.bottom, 20)
                 .foregroundColor(.black)
 
-            // Benutzername‑Feld – gleicher Stil wie im LoginForm
             ZStack(alignment: .leading) {
                 if username.isEmpty {
                     Text("Benutzername festlegen")
-                        .foregroundColor(Color.gray.opacity(0.7))   // dunkles Grau für Placeholder
+                        .foregroundColor(Color.gray.opacity(0.7))
                         .padding(.leading, 16)
                 }
                 TextField("", text: $username)
                     .textFieldStyle(.plain)
                     .padding(12)
-                    .foregroundColor(.black)                       // eingegebener Text in Schwarz
+                    .foregroundColor(.black)
             }
             .background(Color.white, in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10)
                         .stroke(Color.gray.opacity(0.4), lineWidth: 1))
 
-            // Passwort‑Feld – gleicher Stil wie im LoginForm
             ZStack(alignment: .leading) {
                 if password.isEmpty {
                     Text("Passwort festlegen")
@@ -79,7 +79,6 @@ struct RegistrationForm: View {
             .overlay(RoundedRectangle(cornerRadius: 10)
                         .stroke(Color.gray.opacity(0.4), lineWidth: 1))
 
-            // Aktionen
             HStack(spacing: 16) {
                 Button {
                     onCancel()
@@ -101,8 +100,7 @@ struct RegistrationForm: View {
                 .buttonStyle(PlainButtonStyle())
 
                 Button {
-                    // TODO: Persistieren und schließen
-                    onCancel()
+                    onRegister()
                 } label: {
                     Text("Anmeldung abschließen")
                         .fontWeight(.semibold)
@@ -135,11 +133,14 @@ struct RegistrationForm: View {
 }
 
 
+// --- HIER WURDE DER PREVIEW-CODE KORRIGIERT ---
 #Preview("RegistrationForm Preview") {
     RegistrationForm(
         username: .constant("DemoUser"),
         password: .constant("secret"),
+        onRegister: {}, // Fehlendes Argument hinzugefügt
         onCancel: {}
     )
     .frame(width: 400, height: 600)
 }
+// --- ENDE DER KORREKTUR ---

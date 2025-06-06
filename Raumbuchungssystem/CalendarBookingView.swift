@@ -1,9 +1,6 @@
-//
-//  CalendarBookingView.swift
-//  Raumbuchungssystem
-//
-//  Created by Michael Herrmann on 02.06.25.
-//
+// CalendarBookingView.swift
+import SwiftUI
+
 // MARK: - Fachliche Funktionalität
 ///
 /// Die Hauptansicht der Anwendung für angemeldete Benutzer. Sie stellt eine Kalenderübersicht
@@ -12,20 +9,20 @@
 ///
 // MARK: - Technische Funktionalität
 ///
-/// Die View ist als `NavigationView` aufgebaut. Der Hauptinhalt ist eine horizontal scrollbare
-/// Liste (`ScrollView`), die für jeden der 7 Tage eine `DayColumnView` anzeigt.
+/// Die Ansicht ist als einfacher `VStack` aufgebaut, um eine einzelne, nicht teilbare Ansicht
+/// zu gewährleisten. Der Hauptinhalt ist eine horizontal scrollbare Liste (`ScrollView`),
+/// die für jeden der 7 Tage eine `DayColumnView` anzeigt.
 /// Ein `DatePicker` erlaubt die Auswahl des Startdatums für die 7-Tage-Ansicht.
 /// Die Logik und Darstellung für einen einzelnen Raum an einem Tag ist in die `RoomRowView` ausgelagert.
 /// Die Ansicht greift per `@EnvironmentObject` auf alle drei zentralen Daten-Manager zu.
 ///
 // MARK: - Besonderheiten
 ///
+/// - **Keine NavigationView:** Die `NavigationView` wurde bewusst entfernt, um die automatische
+///   Split-View-Darstellung auf macOS zu verhindern. Titel und Aktionen (Logout) sind
+///   manuell im Layout platziert.
 /// - **Komponenten-Struktur:** Die Ansicht ist in mehrere kleinere, spezialisierte Sub-Views
 ///   (`DayColumnView`, `RoomRowView`) unterteilt, was den Code übersichtlich und wartbar macht.
-/// - **Popover für Details:** Wenn ein Raum von mehreren Personen gebucht ist, wird nur eine Vorschau
-///   der Namen angezeigt. Ein Klick darauf öffnet ein `Popover`, das die vollständige Liste anzeigt.
-/// - **Farbliche Indikatoren:** Die Verfügbarkeit eines Raumes wird durch die Textfarbe signalisiert
-///   (Grün, Orange, Rot), um einen schnellen Überblick zu ermöglichen.
 ///
 // MARK: - Zusammenspiel und Abhängigkeiten
 ///
@@ -36,101 +33,101 @@
 ///   - `BookingManager`: Um Buchungen zu erstellen, zu stornieren und den aktuellen Buchungsstatus für jeden Raum abzufragen.
 ///
 
-import SwiftUI
-
 struct CalendarBookingView: View {
     @EnvironmentObject var userStore: UserStore
     @EnvironmentObject var roomStore: RoomStore
     @EnvironmentObject var bookingManager: BookingManager
 
-    @State private var selectedDate = Date() // Für den DatePicker
-    @State private var showingConfigurationSheet = false
+    @State private var selectedDate = Date()
+    @State private var showingConfigurationSheet = false // Steuert die Sichtbarkeit des Sheets
     @State private var showingAlert = false
     @State private var alertMessage = ""
-    
-    // Generiert die Tage für die Anzeige
+
     private var daysToDisplay: [Date] {
         (0..<7).map { Calendar.current.date(byAdding: .day, value: $0, to: selectedDate)! }
     }
 
     var body: some View {
-        NavigationView { // Sinnvoll für macOS, um einen Titel und Toolbar-Items zu haben
+        // --- HIER WURDE DIE NAVIGATIONVIEW ENTFERNT ---
+        // Ein einfacher VStack ist nun die Wurzel, um die Split-View zu verhindern.
+        VStack(alignment: .leading, spacing: 0) {
+            
+            // Der Titel und die obere Leiste wurden manuell nachgebaut.
             VStack(alignment: .leading) {
+                Text("Raumbuchungssystem")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                
                 // Header: Datumsauswahl und Konfigurationsbutton
                 HStack {
                     DatePicker("Datum wählen", selection: $selectedDate, displayedComponents: .date)
-                        .labelsHidden() // Nur den Picker anzeigen
-                        .datePickerStyle(.compact) // Kompakter Stil für macOS
+                        .labelsHidden()
+                        .datePickerStyle(.compact)
                         .frame(maxWidth: 150)
 
-
-                    Button {
-                        // Hier könnte Logik stehen, um die Ansicht basierend auf selectedDate zu aktualisieren,
-                        // aber renderCalendar() in der Schleife unten tut dies bereits implizit.
-                    } label: {
-                        Image(systemName: "arrow.right.circle.fill")
+                    Button("Heute") {
+                        selectedDate = Date()
                     }
-                    .padding(.leading, -8) // Etwas näher an den DatePicker
 
                     Spacer()
+                    
                     Text("Angemeldet: \(userStore.currentUser?.username ?? "Unbekannt")")
+                        .padding(.trailing, 10)
+                    
                     Button {
                         showingConfigurationSheet = true
                     } label: {
                         Image(systemName: "slider.horizontal.3")
                         Text("Räume")
                     }
-                }
-                .padding()
-
-                // Hauptinhalt: Scrollbare Tagesansicht
-                ScrollView(.horizontal, showsIndicators: true) {
-                    HStack(alignment: .top, spacing: 0) {
-                        ForEach(daysToDisplay, id: \.self) { day in
-                            DayColumnView(date: day) // Wir erstellen diese Hilfs-View gleich
-                                .frame(minWidth: 250) // Mindestbreite pro Tag
-                                .padding(.trailing, 10) // Abstand zwischen den Tagespalten
-                        }
-                    }
-                    .padding(.horizontal) // Innenabstand für die ScrollView
-                }
-                Spacer() // Füllt den restlichen vertikalen Platz
-            }
-            .navigationTitle("Raumbuchungssystem")
-            .toolbar {
-                ToolbarItem(placement: .automatic) {
+                    
+                    // Der Logout-Button wurde aus der Toolbar hierher verschoben.
                     Button("Logout") {
                         userStore.logout()
                     }
                 }
             }
-            .sheet(isPresented: $showingConfigurationSheet) {
-                // Hier kommt die RoomConfigurationView rein
-                Text("Raumkonfiguration (Platzhalter)")
-                // RoomConfigurationView().environmentObject(roomStore)...
+            .padding()
+
+            // Hauptinhalt: Scrollbare Tagesansicht
+            ScrollView(.horizontal, showsIndicators: true) {
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(daysToDisplay, id: \.self) { day in
+                        DayColumnView(date: day)
+                            .frame(minWidth: 250)
+                            .padding(.trailing, 10)
+                    }
+                }
+                .padding(.horizontal)
             }
-            .alert(isPresented: $showingAlert) {
-                Alert(title: Text("Hinweis"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-            }
+            Spacer() // Füllt den restlichen vertikalen Platz
         }
-        .frame(minWidth: 800, minHeight: 600) // Eine Mindestgröße für das Fenster
+        // --- ENDE DER ÄNDERUNG ---
+        .sheet(isPresented: $showingConfigurationSheet) {
+            RoomConfigurationView()
+        }
+        .alert(isPresented: $showingAlert) {
+            Alert(title: Text("Hinweis"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+        .frame(minWidth: 800, minHeight: 600)
     }
 }
 
-// Hilfs-View für eine einzelne Tagespalte
+// Die untergeordneten Views (DayColumnView, RoomRowView) bleiben unverändert.
+
 struct DayColumnView: View {
     @EnvironmentObject var roomStore: RoomStore
     @EnvironmentObject var bookingManager: BookingManager
-    @EnvironmentObject var userStore: UserStore // Für den aktuellen User beim Buchen
+    @EnvironmentObject var userStore: UserStore
 
     let date: Date
-    
+
     @State private var showingBookingAlert = false
     @State private var bookingAlertMessage = ""
 
     private func formatDateHeader(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "E, dd.MM.yy" // z.B. Mo, 02.06.25
+        formatter.dateFormat = "E, dd.MM.yy"
         return formatter.string(from: date)
     }
 
@@ -148,33 +145,32 @@ struct DayColumnView: View {
                             .padding()
                     } else {
                         ForEach(roomStore.rooms) { room in
-                            RoomRowView(room: room, date: date) // Wir erstellen diese auch gleich
+                            RoomRowView(room: room, date: date)
                         }
                     }
                 }
             }
         }
-        .padding(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0)) // Oben/Unten Padding für die Spalte
+        .padding(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
         .alert(isPresented: $showingBookingAlert) {
             Alert(title: Text("Buchungsinformation"), message: Text(bookingAlertMessage), dismissButton: .default(Text("OK")))
         }
     }
 }
 
-// Hilfs-View für eine einzelne Raumzeile
 struct RoomRowView: View {
     @EnvironmentObject var bookingManager: BookingManager
     @EnvironmentObject var userStore: UserStore
 
     let room: Room
     let date: Date
-    
+
     @State private var showBookedUsersPopover = false
 
     private var bookedUserIDs: [UUID] {
         bookingManager.getBookedUserIDs(for: room.id, on: date)
     }
-    
+
     private var bookedUsernames: [String] {
         bookedUserIDs.compactMap { userStore.getUsername(by: $0) }
     }
@@ -182,7 +178,7 @@ struct RoomRowView: View {
     private var availableSeats: Int {
         room.capacity - bookedUserIDs.count
     }
-    
+
     private var isCurrentUserBooked: Bool {
         if let currentUserID = userStore.currentUser?.id {
             return bookedUserIDs.contains(currentUserID)
@@ -193,7 +189,7 @@ struct RoomRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(room.name).font(.title3)
-            
+
             HStack {
                 Text("Kapazität: \(room.capacity)")
                 Spacer()
@@ -224,35 +220,22 @@ struct RoomRowView: View {
                     .foregroundColor(.gray)
             }
 
-
-            if room.capacity > 0 { // Buchungsbutton nur anzeigen, wenn Kapazität > 0
+            if room.capacity > 0 {
                 Button {
                     guard let currentUser = userStore.currentUser else { return }
-                    
+
                     if isCurrentUserBooked {
-                        // Stornieren
                         bookingManager.cancelBooking(roomID: room.id, date: date, userID: currentUser.id)
-                        // Hier könnte Feedback für erfolgreiche Stornierung stehen
                     } else {
-                        // Buchen
                         if availableSeats > 0 {
-                            let success = bookingManager.bookRoom(room: room, date: date, userID: currentUser.id)
-                            if !success {
-                                // Zeige Alert, wenn Raum voll oder anderer Fehler
-                                // bookingAlertMessage = "Raum konnte nicht gebucht werden (möglicherweise voll)."
-                                // showingBookingAlert = true // Dies würde im DayColumnView Alert zeigen
-                            }
-                        } else {
-                            // Zeige Alert, Raum ist voll
-                            // bookingAlertMessage = "Dieser Raum ist bereits voll belegt."
-                            // showingBookingAlert = true
+                            _ = bookingManager.bookRoom(room: room, date: date, userID: currentUser.id)
                         }
                     }
                 } label: {
                     Text(isCurrentUserBooked ? "Meine Buchung stornieren" : "Buchen")
                         .frame(maxWidth: .infinity)
                 }
-                .disabled(availableSeats <= 0 && !isCurrentUserBooked && room.capacity > 0) // Deaktivieren, wenn voll und nicht selbst gebucht
+                .disabled(availableSeats <= 0 && !isCurrentUserBooked && room.capacity > 0)
                 .padding(.top, 4)
             } else {
                 Text("Raum gesperrt")
@@ -263,31 +246,11 @@ struct RoomRowView: View {
             }
         }
         .padding()
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.5)) // Leichter Hintergrund für jede Raumkarte
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
         .cornerRadius(8)
         .overlay(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color.gray.opacity(0.3), lineWidth: 1)
         )
-    }
-}
-
-struct CalendarBookingView_Previews: PreviewProvider {
-    static var previews: some View {
-        // Erstelle Dummy-Stores für die Preview
-        let userStore = UserStore()
-        let roomStore = RoomStore()
-        let bookingManager = BookingManager()
-        
-        // Füge einen Testuser hinzu und setze ihn als currentUser
-        _ = userStore.register(username: "TestUser", password: "password")
-        userStore.login(username: "TestUser", password: "password")
-
-
-        return MainView() // Zeige MainView, die dann CalendarBookingView oder StartView rendert
-            .environmentObject(userStore)
-            .environmentObject(roomStore)
-            .environmentObject(bookingManager)
-            .frame(width: 900, height: 700)
     }
 }
