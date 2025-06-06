@@ -1,4 +1,38 @@
 // UserStore.swift
+// MARK: - Fachliche Funktionalität
+///
+/// Dient als zentraler Daten-Manager für alle benutzerbezogenen Informationen und Aktionen.
+/// Er verwaltet die Liste aller registrierten Benutzer, kümmert sich um die Logik für
+/// Registrierung, Login und Logout und hält den aktuell angemeldeten Benutzer als
+/// "Source of Truth" (alleinige Wahrheitsquelle) für die gesamte App vor.
+///
+// MARK: - Technische Funktionalität
+///
+/// Ein als `final class` deklarierter `ObservableObject`. Er publiziert Änderungen an seinen
+/// `@Published` Properties (`users`, `currentUser`), wodurch SwiftUI-Views, die ihn beobachten,
+/// automatisch neu gerendert werden (z.B. bei Login/Logout).
+/// Benutzerdaten werden zur Persistenz mittels `JSONEncoder` in `UserDefaults` als JSON gespeichert
+/// und beim App-Start mit `JSONDecoder` wieder geladen.
+///
+// MARK: - Besonderheiten
+///
+/// - **Sicherheitshinweis:** In dieser Implementierung werden Passwörter zur Vereinfachung als
+///   Klartext-Strings in den `UserDefaults` gespeichert. In einer produktiven Anwendung ist dies
+///   ein Sicherheitsrisiko. Passwörter sollten stattdessen sicher gehasht (z.B. mit Argon2, bcrypt)
+///   und idealerweise im `Keychain` des Systems gespeichert werden.
+///
+// MARK: - Zusammenspiel und Abhängigkeiten
+///
+/// - **Wird initialisiert von:** `RaumbuchungssystemApp` und als `@EnvironmentObject` bereitgestellt.
+/// - **Wird genutzt von:**
+///   - `MainView`: Um basierend auf `currentUser` die korrekte Ansicht (Login vs. Haupt-App) anzuzeigen.
+///   - `LoginForm`: Ruft `login()` auf, um die Anmeldedaten zu überprüfen.
+///   - `CalendarBookingView`: Liest den `currentUser` für Anzeigenamen und Buchungs-IDs und ruft `getUsername(by:)` auf.
+///   - `RegistrationForm` (indirekt): Die in der `RegistrationForm` erfassten Daten werden verwendet, um `register()` aufzurufen.
+///
+
+
+
 import Foundation
 import Combine
 

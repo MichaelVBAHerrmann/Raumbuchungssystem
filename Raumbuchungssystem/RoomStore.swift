@@ -2,10 +2,37 @@
 //  RoomStore.swift
 //  Raumbuchungssystem
 //
-//  Created by Michael Herrmann on 02.06.25.
-//
+// MARK: - Fachliche Funktionalität
+///
+/// Dient als zentraler Daten-Manager für die Definitionen aller verfügbaren Räume.
+/// Er ermöglicht das Anlegen, Auslesen, Aktualisieren und Löschen von Räumen (CRUD-Operationen)
+/// und stellt die Liste aller Räume der Anwendung zur Verfügung.
+///
+// MARK: - Technische Funktionalität
+///
+/// Ein als `final class` deklarierter `ObservableObject`. Er publiziert Änderungen an seiner
+/// `@Published` Property (`rooms`), wodurch SwiftUI-Views, die die Raumliste anzeigen,
+/// bei Änderungen automatisch aktualisiert werden. Die Raumdefinitionen werden zur Persistenz
+/// mittels `JSONEncoder` in `UserDefaults` als JSON gespeichert und beim Start geladen.
+///
+// MARK: - Besonderheiten
+///
+/// - **Standard-Daten:** Falls beim ersten App-Start keine gespeicherten Räume in den `UserDefaults`
+///   gefunden werden, erstellt der `RoomStore` automatisch einen Satz von Standard-Räumen.
+///   Dies stellt sicher, dass die Anwendung von Anfang an benutzbare Daten enthält.
+///
+// MARK: - Zusammenspiel und Abhängigkeiten
+///
+/// - **Wird initialisiert von:** `RaumbuchungssystemApp` und als `@EnvironmentObject` bereitgestellt.
+/// - **Wird genutzt von:**
+///   - `CalendarBookingView`: Liest die `rooms`-Liste, um alle Räume in den Tagespalten anzuzeigen.
+///   - (Zukünftig) `RoomConfigurationView`: Würde die Methoden `addRoom`, `updateRoom` und `deleteRoom`
+///     aufrufen, um die Raumliste zu verwalten.
+/// - **Stellt Daten bereit für:** `BookingManager`, der die `id` und `capacity` eines Raumes für die
+///   Buchungslogik benötigt.
+///
 
-// RoomStore.swift
+
 import Foundation
 import Combine
 

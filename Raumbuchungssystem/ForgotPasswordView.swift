@@ -4,6 +4,32 @@
 //
 //  Created by Michael Herrmann on 06.06.25.
 //
+// MARK: - Fachliche Funktionalität
+///
+/// Eine Ansicht, die angezeigt wird, wenn der Benutzer auf "Passwort vergessen?" klickt.
+/// Sie informiert den Benutzer auf humorvolle Weise darüber, dass diese Funktion nicht
+/// implementiert ist, und zeigt dabei ein Bild an.
+///
+// MARK: - Technische Funktionalität
+///
+/// Eine einfache SwiftUI `View`. Sie verwendet die `@Environment`-Variable `dismiss`,
+/// um sich selbst zu schließen (da sie als modaler Sheet präsentiert wird).
+/// Sie zeigt ein `Image`-Element an, das aus den App-Assets geladen wird.
+///
+// MARK: - Besonderheiten
+///
+/// - **Benutzerdefinierter Button-Stil:** Der Button verwendet `.buttonStyle(PlainButtonStyle())`,
+///   um den standardmäßigen blauen Fokus-Rahmen von macOS zu entfernen und ein vollständig
+///   individuelles Aussehen zu ermöglichen.
+/// - **Asset-Abhängigkeit:** Die Ansicht setzt voraus, dass ein Bild mit dem Namen "Esel"
+///   im `Assets.xcassets`-Katalog des Projekts vorhanden ist.
+///
+// MARK: - Zusammenspiel und Abhängigkeiten
+///
+/// - **Wird aufgerufen von:** `LoginForm`, die diese Ansicht als Sheet präsentiert.
+/// - **Abhängigkeiten:** Hat keine direkten Abhängigkeiten zu Daten-Managern oder anderen
+///   logischen Modulen. Benötigt lediglich ein Bild-Asset.
+///
 
 // ForgotPasswordView.swift
 import SwiftUI

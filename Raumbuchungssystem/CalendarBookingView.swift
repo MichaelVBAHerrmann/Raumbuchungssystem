@@ -4,8 +4,38 @@
 //
 //  Created by Michael Herrmann on 02.06.25.
 //
+// MARK: - Fachliche Funktionalität
+///
+/// Die Hauptansicht der Anwendung für angemeldete Benutzer. Sie stellt eine Kalenderübersicht
+/// dar, in der die verfügbaren Räume für einen 7-Tage-Zeitraum angezeigt werden. Benutzer
+/// können hier Räume für sich buchen oder bestehende eigene Buchungen stornieren.
+///
+// MARK: - Technische Funktionalität
+///
+/// Die View ist als `NavigationView` aufgebaut. Der Hauptinhalt ist eine horizontal scrollbare
+/// Liste (`ScrollView`), die für jeden der 7 Tage eine `DayColumnView` anzeigt.
+/// Ein `DatePicker` erlaubt die Auswahl des Startdatums für die 7-Tage-Ansicht.
+/// Die Logik und Darstellung für einen einzelnen Raum an einem Tag ist in die `RoomRowView` ausgelagert.
+/// Die Ansicht greift per `@EnvironmentObject` auf alle drei zentralen Daten-Manager zu.
+///
+// MARK: - Besonderheiten
+///
+/// - **Komponenten-Struktur:** Die Ansicht ist in mehrere kleinere, spezialisierte Sub-Views
+///   (`DayColumnView`, `RoomRowView`) unterteilt, was den Code übersichtlich und wartbar macht.
+/// - **Popover für Details:** Wenn ein Raum von mehreren Personen gebucht ist, wird nur eine Vorschau
+///   der Namen angezeigt. Ein Klick darauf öffnet ein `Popover`, das die vollständige Liste anzeigt.
+/// - **Farbliche Indikatoren:** Die Verfügbarkeit eines Raumes wird durch die Textfarbe signalisiert
+///   (Grün, Orange, Rot), um einen schnellen Überblick zu ermöglichen.
+///
+// MARK: - Zusammenspiel und Abhängigkeiten
+///
+/// - **Wird aufgerufen von:** `MainView`, sobald ein Benutzer erfolgreich angemeldet ist.
+/// - **Abhängigkeiten:**
+///   - `UserStore`: Um den Namen des angemeldeten Benutzers anzuzeigen und die Benutzer-ID für Buchungen zu erhalten.
+///   - `RoomStore`: Um die Liste aller verfügbaren Räume zu erhalten und anzuzeigen.
+///   - `BookingManager`: Um Buchungen zu erstellen, zu stornieren und den aktuellen Buchungsstatus für jeden Raum abzufragen.
+///
 
-// CalendarBookingView.swift
 import SwiftUI
 
 struct CalendarBookingView: View {

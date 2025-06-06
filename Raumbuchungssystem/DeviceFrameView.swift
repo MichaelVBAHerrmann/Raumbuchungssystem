@@ -1,3 +1,32 @@
+// MARK: - Fachliche Funktionalität
+///
+/// Ein rein dekoratives Modul, das einen stilisierten Rahmen eines Smartphones im Comic-Look darstellt.
+/// Es dient dazu, eine andere Ansicht (typischerweise die `LoginForm`) auf visuell ansprechende
+/// Weise innerhalb dieses Rahmens zu präsentieren.
+///
+// MARK: - Technische Funktionalität
+///
+/// Eine generische SwiftUI `View`, die eine beliebige andere `View` als `content` über eine
+/// `@ViewBuilder`-Closure entgegennimmt. Sie nutzt einen `GeometryReader`, um ihre eigenen Proportionen
+/// zu berechnen und ein festes Seitenverhältnis (ähnlich einem iPhone) beizubehalten.
+/// Der Rahmen selbst ist aus mehreren `RoundedRectangle`- und `Capsule`-Shapes zusammengesetzt.
+///
+// MARK: - Besonderheiten
+///
+/// - **Animation:** Beim Erscheinen wird eine Feder-Animation für einen "Scale-In"-Effekt genutzt.
+///   Zusätzlich sorgt eine sich wiederholende "Float"-Animation dafür, dass der Rahmen sanft auf
+///   und ab schwebt, was für mehr Dynamik sorgt.
+/// - **Dynamische Proportionen:** Alle Elemente des Rahmens (Gehäuse, Notch, Buttons) werden
+///   proportional zur Gesamtgröße berechnet, sodass das Design bei jeder Größe konsistent bleibt.
+///
+// MARK: - Zusammenspiel und Abhängigkeiten
+///
+/// - **Wird genutzt von:** `StartView`, um die `LoginForm` zu umschließen.
+/// - **Abhängigkeiten:** Hat keinerlei Abhängigkeiten zu Daten-Managern oder anderer App-Logik.
+///   Es ist ein vollständig unabhängiges, rein visuelles Modul.
+///
+
+
 import SwiftUI
 
 /// Stilisierter iPhone-Rahmen im Comic-Stil mit animiertem Auftauchen.

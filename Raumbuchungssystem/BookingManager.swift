@@ -1,4 +1,43 @@
 // BookingManager.swift
+// MARK: - Fachliche Funktionalität
+///
+/// Verwaltet die gesamte Logik für Raumbuchungen. Dies umfasst das Erstellen und Stornieren
+/// von Buchungen sowie das Abrufen von Informationen darüber, welche Benutzer einen bestimmten
+/// Raum an einem bestimmten Datum gebucht haben. Er setzt dabei Geschäftsregeln durch, wie z.B.
+/// das Verhindern von Überbuchungen (mehr Buchungen als Kapazität vorhanden).
+///
+// MARK: - Technische Funktionalität
+///
+/// Ein als `final class` deklarierter `ObservableObject`. Er speichert alle Buchungen in einem
+/// Dictionary, das zur Persistenz in `UserDefaults` als JSON serialisiert wird.
+/// Änderungen an den Buchungen werden über das `@Published`-Property `bookingsByDateRoom`
+/// an die Beobachter (Views) weitergegeben, was zu einer Aktualisierung der UI führt.
+///
+// MARK: - Besonderheiten
+///
+/// - **Normalisierter Datumsschlüssel:** Verwendet eine benutzerdefinierte `NormalizedDateKey`-Struct,
+///   um sicherzustellen, dass Buchungen immer nur dem Kalendertag (ohne Uhrzeit) zugeordnet werden.
+///   Dies vereinfacht Datumsvergleiche erheblich.
+/// - **Komplexe Datenstruktur:** Die Buchungen werden in einer verschachtelten Dictionary-Struktur
+///   (`[NormalizedDateKey: [UUID: [UUID]?]]`) gehalten. Diese ist für schnelle Lesezugriffe
+///   optimiert: Datum -> Raum-ID -> Liste von Benutzer-IDs.
+/// - **Datenintegrität:** Beinhaltet Funktionen (`handleRoomDeleted`, `handleRoomCapacityChanged`),
+///   um die Buchungsdaten konsistent zu halten, falls Räume gelöscht oder deren Kapazität
+///   geändert wird (diese Funktionen werden aktuell aber noch nicht von der UI aufgerufen).
+///
+// MARK: - Zusammenspiel und Abhängigkeiten
+///
+/// - **Wird initialisiert von:** `RaumbuchungssystemApp` und als `@EnvironmentObject` bereitgestellt.
+/// - **Wird genutzt von:**
+///   - `CalendarBookingView` (insbesondere `RoomRowView`): Ruft `bookRoom()`, `cancelBooking()` und
+///     `getBookedUserIDs()` auf, um die Buchungs-Interaktionen und -Anzeigen zu steuern.
+/// - **Abhängigkeiten:**
+///   - `Room`: Benötigt Raum-Informationen (insb. `id` und `capacity`) aus dem `RoomStore`.
+///   - `User`: Benötigt die `id` des Benutzers aus dem `UserStore` für die Zuordnung von Buchungen.
+///
+
+
+
 import Foundation
 import Combine
 

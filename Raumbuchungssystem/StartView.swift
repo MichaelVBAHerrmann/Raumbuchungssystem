@@ -4,6 +4,33 @@
 //
 //  Created by Michael Herrmann on 26.05.25.
 //
+// MARK: - Fachliche Funktionalität
+///
+/// Dies ist die Start-Ansicht, die einem nicht angemeldeten Benutzer präsentiert wird. Sie dient als
+/// Einstiegspunkt für die Authentifizierung und zeigt entweder ein Login-Formular oder, nach
+/// Auswahl, ein Registrierungs-Formular an.
+///
+// MARK: - Technische Funktionalität
+///
+/// Die `View` nutzt einen `GeometryReader`, um sich an die verfügbare Fenstergröße anzupassen.
+/// Ein `@State`-Property `isRegistering` steuert per `if`-Abfrage, ob die `LoginForm` oder die
+/// `RegistrationForm` angezeigt wird. Das Login-Formular ist zusätzlich in eine rein dekorative
+/// `DeviceFrameView` eingebettet.
+///
+// MARK: - Besonderheiten
+///
+/// - **Hintergrundbild:** Ein vollflächiges Hintergrundbild sorgt für eine ansprechende Optik.
+/// - **Responsives Design:** Die Größe des `DeviceFrameView` passt sich dynamisch an, hat aber eine
+///   feste Mindestbreite, um bei sehr kleinen Fenstern nicht unbrauchbar klein zu werden.
+///
+// MARK: - Zusammenspiel und Abhängigkeiten
+///
+/// - **Enthält:** `LoginForm` und `RegistrationForm`.
+/// - **Nutzt:** `DeviceFrameView` zur Dekoration.
+/// - **Wird aufgerufen von:** `MainView`, wenn kein Benutzer angemeldet ist (`userStore.currentUser == nil`).
+/// - **Interaktion:** Leitet Benutzeraktionen (Login, Registrierung) an die enthaltenen Formulare weiter,
+///   welche dann mit dem `UserStore` interagieren.
+///
 
 import SwiftUI
 

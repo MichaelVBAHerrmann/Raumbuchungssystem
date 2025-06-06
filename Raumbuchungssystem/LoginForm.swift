@@ -1,4 +1,33 @@
 // LoginForm.swift
+// MARK: - Fachliche Funktionalität
+///
+/// Stellt die Benutzeroberfläche zur Anmeldung für bestehende Benutzer bereit. Der Benutzer kann
+/// seinen Benutzernamen und sein Passwort eingeben. Zusätzlich gibt es Navigationsmöglichkeiten
+/// zur Registrierung oder zur (noch nicht implementierten) "Passwort vergessen"-Funktion.
+///
+// MARK: - Technische Funktionalität
+///
+/// Eine SwiftUI `View`, die über `@Binding` die Eingabewerte (Benutzername, Passwort) von einer
+/// übergeordneten View (`StartView`) empfängt. Sie greift per `@EnvironmentObject` auf den `UserStore`
+/// zu, um die `login()`-Funktion aufzurufen. Lokale `@State`-Variablen steuern die Anzeige von
+/// Popups (Alerts oder Sheets) für Erfolgs-, Fehler- oder Hinweismeldungen.
+///
+// MARK: - Besonderheiten
+///
+/// - **Detaillierte Fehlermeldungen:** Die Login-Funktion gibt dem Benutzer spezifisches Feedback,
+///   z.B. ob der Benutzername nicht existiert oder nur das Passwort falsch war.
+/// - **Sheet für "Passwort vergessen":** Statt eines einfachen Alerts wird ein modaler Sheet mit
+///   der `ForgotPasswordView` präsentiert, wenn der Benutzer auf "Passwort vergessen?" klickt.
+///
+// MARK: - Zusammenspiel und Abhängigkeiten
+///
+/// - **Abhängigkeiten:** Greift direkt auf `UserStore` zu, um Benutzer anzumelden.
+/// - **Wird enthalten von:** `StartView` (und dort in `DeviceFrameView` gewrappt).
+/// - **Ruft auf:** Präsentiert die `ForgotPasswordView` als Sheet.
+/// - **Kommuniziert mit `StartView`:** Über den `onRegister` Callback wird die `StartView` informiert,
+///   dass sie zur `RegistrationForm` wechseln soll.
+///
+
 import SwiftUI
 
 struct LoginForm: View {
