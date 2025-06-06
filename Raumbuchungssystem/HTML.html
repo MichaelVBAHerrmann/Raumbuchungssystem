@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raumbuchungssystem - Mockup V3</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .header { text-align: center; margin-bottom: 5px; }
+        .header h1 { margin-bottom: 0; }
+        .header p { font-size: 0.9em; color: #666; margin-top:2px; }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+        }
+        .date-picker-group label { margin-right: 5px; font-weight: 500; }
+        .date-picker-group input[type="date"] { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        .control-button { /* General class for config and jump buttons */
+            padding: 10px 15px;
+            font-size: 1em;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .config-button { background-color: #007bff; }
+        .config-button:hover { background-color: #0056b3; }
+        .jump-button { background-color: #28a745; }
+        .jump-button:hover { background-color: #1e7e34; }
+
+        .calendar-container {
+            display: flex;
+            overflow-x: auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding-bottom: 10px;
+        }
+        .day-column {
+            min-width: 250px;
+            border-right: 1px solid #e0e0e0;
+            padding: 15px;
+        }
+        .day-column:last-child { border-right: none; }
+        .day-header {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #555;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .room-list { list-style: none; padding: 0; margin: 0; }
+        .room-item {
+            background-color: #f9f9f9;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .room-item:hover:not(.full) { background-color: #e9e9e9; }
+        .room-item.full { background-color: #ffe0e0; cursor: not-allowed; }
+        .room-item.full:hover { background-color: #ffd0d0; }
+        .room-name { font-weight: 600; display: block; margin-bottom: 5px; }
+        .room-availability { font-size: 0.9em; color: #666; display: block; margin-bottom: 5px; }
+        .room-availability.low { color: #d9534f; font-weight: bold; }
+        .room-availability.medium { color: #f0ad4e; }
+        .room-availability.high { color: #5cb85c; }
+        .booked-users-list {
+            font-size: 0.8em; color: #777; margin-top: 5px;
+            padding-left: 15px; list-style-type: disc;
+        }
+        .booked-users-list li { margin-bottom: 2px; }
+
+        .modal {
+            display: none; position: fixed; z-index: 1000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fff; margin: 8% auto; padding: 25px;
+            border: 1px solid #888; width: 90%; max-width: 500px;
+            border-radius: 8px; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h2, .modal-content h3 { margin-top: 0; text-align: center; margin-bottom: 15px; }
+        .modal-content p { margin-bottom: 20px; font-size: 1.1em; text-align: center; }
+        .modal-footer { text-align: center; margin-top: 20px; }
+        .modal-button {
+            padding: 10px 20px; border: none; border-radius: 5px;
+            cursor: pointer; font-size: 1em; margin: 0 5px;
+        }
+        .close-button { background-color: #6c757d; color: white; }
+        .close-button:hover { background-color: #5a6268; }
+        .action-button { background-color: #007bff; color: white; }
+        .action-button:hover { background-color: #0056b3; }
+        .danger-button { background-color: #dc3545; color: white; }
+        .danger-button:hover { background-color: #c82333; }
+        .edit-button { background-color: #ffc107; color: #212529; }
+        .edit-button:hover { background-color: #e0a800; }
+
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+        .form-group input[type="text"], .form-group input[type="number"] {
+            width: calc(100% - 22px); padding: 10px;
+            border: 1px solid #ccc; border-radius: 4px;
+        }
+        .config-room-list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid #eee;
+        }
+        .config-room-list-item:last-child { border-bottom: none; }
+        .config-room-list-item .buttons { display: flex; gap: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Raumbuchungssystem</h1>
+        <p>Mockup für macOS Anwendung (V3)</p>
+    </div>
+
+    <div class="controls">
+        <div class="date-picker-group">
+            <label for="datePicker">Springe zu Datum:</label>
+            <input type="date" id="datePicker">
+            <button id="jumpToDateButton" class="control-button jump-button">Go</button>
+        </div>
+        <button id="openConfigModalButton" class="control-button config-button">Räume konfigurieren</button>
+    </div>
+
+    <div class="calendar-container" id="calendarContainer"></div>
+
+    <div id="errorModal" class="modal">
+        <div class="modal-content">
+            <p id="errorMessage"></p>
+            <div class="modal-footer">
+                <button id="closeErrorModalButton" class="modal-button close-button">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="configModal" class="modal">
+        <div class="modal-content">
+            <h2 id="configModalTitle">Räume konfigurieren</h2>
+            
+            <div id="roomEditForm">
+                <h3 id="configFormHeader">Neuen Raum hinzufügen</h3>
+                <input type="hidden" id="editingRoomId">
+                <div class="form-group">
+                    <label for="newRoomName">Raumname:</label>
+                    <input type="text" id="newRoomName" placeholder="z.B. Konferenzraum X">
+                </div>
+                <div class="form-group">
+                    <label for="newRoomCapacity">Kapazität:</label>
+                    <input type="number" id="newRoomCapacity" placeholder="z.B. 5" min="0"> </div>
+                 <div class="form-group">
+                    <button id="saveRoomButton" class="modal-button action-button">Raum hinzufügen</button>
+                    <button type="button" id="cancelEditButton" class="modal-button close-button" style="display:none;">Abbrechen</button>
+                </div>
+            </div>
+            <hr style="margin: 20px 0;">
+            <h3>Bestehende Räume</h3>
+            <div id="configRoomList"></div>
+            <div class="modal-footer" style="margin-top: 30px;">
+                <button id="closeConfigModalButton" class="modal-button close-button">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let roomDefinitions = [
+            { id: "r1", name: "Konferenzraum Alpha", capacity: 3 },
+            { id: "r2", name: "Meetingraum Beta", capacity: 2 },
+            { id: "r3", name: "Projektraum Gamma", capacity: 5 }
+        ];
+        let bookings = {}; // Structure: bookings[dateString][roomId] = ['User1', 'User2', ...]
+        let mockUserCounter = 0;
+        const mockUserPrefix = "Gast ";
+        let currentCalendarStartDate = new Date(); // Start with today
+        let currentlyEditingRoomId = null;
+
+        const calendarContainer = document.getElementById('calendarContainer');
+        const errorModal = document.getElementById('errorModal');
+        const errorMessageElement = document.getElementById('errorMessage');
+        const closeErrorModalButton = document.getElementById('closeErrorModalButton');
+
+        const configModal = document.getElementById('configModal');
+        const openConfigModalButton = document.getElementById('openConfigModalButton');
+        const closeConfigModalButton = document.getElementById('closeConfigModalButton');
+        
+        const roomEditForm = document.getElementById('roomEditForm');
+        const configFormHeader = document.getElementById('configFormHeader');
+        const saveRoomButton = document.getElementById('saveRoomButton');
+        const editingRoomIdInput = document.getElementById('editingRoomId'); // Hidden input
+        const newRoomNameInput = document.getElementById('newRoomName');
+        const newRoomCapacityInput = document.getElementById('newRoomCapacity');
+        const configRoomListDiv = document.getElementById('configRoomList');
+        const cancelEditButton = document.getElementById('cancelEditButton');
+
+        const datePicker = document.getElementById('datePicker');
+        const jumpToDateButton = document.getElementById('jumpToDateButton');
+
+        function getDayName(date) { /* ... (same as V2) ... */
+            const days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+            return days[date.getDay()];
+        }
+        function formatDate(date) { /* ... (same as V2) ... */
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            return `${day}.${month}.${date.getFullYear()}`;
+        }
+        function initializeBookingsForDate(dateStr) { /* ... (same as V2) ... */
+            if (!bookings[dateStr]) bookings[dateStr] = {};
+            roomDefinitions.forEach(roomDef => {
+                if (!bookings[dateStr][roomDef.id]) bookings[dateStr][roomDef.id] = [];
+            });
+        }
+        function initializeBookingsForRoom(roomId) { /* ... (same as V2) ... */
+            Object.keys(bookings).forEach(dateStr => {
+                if (!bookings[dateStr][roomId]) bookings[dateStr][roomId] = [];
+            });
+        }
+
+        function renderCalendar() {
+            calendarContainer.innerHTML = '';
+            const baseDate = new Date(currentCalendarStartDate); // Use the selected start date
+            const numberOfDaysToShow = 7;
+
+            for (let i = 0; i < numberOfDaysToShow; i++) {
+                const currentDate = new Date(baseDate);
+                currentDate.setDate(baseDate.getDate() + i);
+                const dateStr = formatDate(currentDate);
+                initializeBookingsForDate(dateStr);
+
+                const dayColumn = document.createElement('div');
+                dayColumn.className = 'day-column';
+                const dayHeader = document.createElement('h3');
+                dayHeader.className = 'day-header';
+                dayHeader.textContent = `${getDayName(currentDate)}, ${dateStr}`;
+                dayColumn.appendChild(dayHeader);
+
+                const roomListUL = document.createElement('ul');
+                roomListUL.className = 'room-list';
+
+                roomDefinitions.forEach(roomDef => {
+                    const bookedUsersArray = bookings[dateStr][roomDef.id] || [];
+                    const bookedCount = bookedUsersArray.length;
+                    // Available seats can be negative if capacity was reduced below bookings.
+                    const availableSeats = roomDef.capacity - bookedCount;
+
+                    const roomItem = document.createElement('li');
+                    roomItem.className = 'room-item';
+                    roomItem.dataset.roomId = roomDef.id;
+                    roomItem.dataset.date = dateStr;
+
+                    const roomNameSpan = document.createElement('span');
+                    roomNameSpan.className = 'room-name';
+                    roomNameSpan.textContent = roomDef.name;
+                    roomItem.appendChild(roomNameSpan);
+
+                    const roomAvailabilitySpan = document.createElement('span');
+                    roomAvailabilitySpan.className = 'room-availability';
+                    updateAvailabilityText(roomAvailabilitySpan, availableSeats, roomDef.capacity, bookedCount);
+                    roomItem.appendChild(roomAvailabilitySpan);
+
+                    const bookedUsersUL = document.createElement('ul');
+                    bookedUsersUL.className = 'booked-users-list';
+                    if (bookedCount > 0) {
+                        bookedUsersArray.forEach(user => {
+                            const li = document.createElement('li');
+                            li.textContent = user;
+                            bookedUsersUL.appendChild(li);
+                        });
+                    } else {
+                         const li = document.createElement('li');
+                         li.textContent = "Noch keine Buchungen";
+                         li.style.listStyleType = "none";
+                         li.style.marginLeft = "-15px";
+                         bookedUsersUL.appendChild(li);
+                    }
+                    roomItem.appendChild(bookedUsersUL);
+
+                    if (availableSeats <= 0 && roomDef.capacity > 0) { // Only mark full if capacity > 0
+                        roomItem.classList.add('full');
+                    } else {
+                        roomItem.classList.remove('full');
+                    }
+                    
+                    roomItem.addEventListener('click', () => handleRoomClick(roomDef.id, dateStr, roomDef.name, roomDef.capacity));
+                    roomListUL.appendChild(roomItem);
+                });
+                dayColumn.appendChild(roomListUL);
+                calendarContainer.appendChild(dayColumn);
+            }
+        }
+        
+        function updateAvailabilityText(element, available, capacity, bookedCount) {
+            if (capacity === 0) {
+                element.textContent = `Raum gesperrt (0 Plätze)`;
+                element.className = 'room-availability low'; // keep class for consistency
+                return;
+            }
+            element.textContent = `Frei: ${available < 0 ? 0 : available} / ${capacity} (Gebucht: ${bookedCount})`;
+            element.classList.remove('low', 'medium', 'high');
+            
+            const effectiveAvailable = Math.max(0, available); // Don't show negative availability for color coding
+            const ratio = capacity > 0 ? effectiveAvailable / capacity : 0;
+
+            if (effectiveAvailable === 0) {
+                element.classList.add('low');
+            } else if (capacity > 0 && ratio < 0.3) {
+                 element.classList.add('low');
+            } else if (capacity > 0 && ratio < 0.6) {
+                element.classList.add('medium');
+            } else {
+                element.classList.add('high');
+            }
+        }
+
+        function handleRoomClick(roomId, dateStr, roomName, capacity) {
+            let bookedUsersArray = bookings[dateStr][roomId] || [];
+            if (capacity === 0) {
+                 showErrorModal(`Der Raum "${roomName}" ist aktuell gesperrt und kann nicht gebucht werden.`);
+                 return;
+            }
+            if (bookedUsersArray.length < capacity) {
+                mockUserCounter++;
+                const newUser = mockUserPrefix + mockUserCounter;
+                bookedUsersArray.push(newUser);
+                bookings[dateStr][roomId] = bookedUsersArray;
+                renderCalendar();
+            } else {
+                showErrorModal(`Der Raum "${roomName}" ist bereits voll belegt (maximale Kapazität: ${capacity} Plätze).`);
+            }
+        }
+
+        function showErrorModal(message) { /* ... (same as V2) ... */
+            errorMessageElement.textContent = message;
+            errorModal.style.display = 'block';
+        }
+        closeErrorModalButton.onclick = () => errorModal.style.display = 'none';
+
+        // --- Date Picker Logic ---
+        datePicker.valueAsDate = new Date(currentCalendarStartDate); // Set initial value for date picker
+        jumpToDateButton.onclick = () => {
+            if (datePicker.value) {
+                // Datepicker value is like YYYY-MM-DD. Need to parse carefully for timezone.
+                const parts = datePicker.value.split('-');
+                currentCalendarStartDate = new Date(parts[0], parts[1] - 1, parts[2]); // Month is 0-indexed
+                renderCalendar();
+            } else {
+                alert("Bitte wählen Sie ein gültiges Datum.");
+            }
+        };
+
+        // --- Raumkonfiguration Logic ---
+        openConfigModalButton.onclick = () => {
+            resetRoomForm();
+            renderConfigRoomList();
+            configModal.style.display = 'block';
+        }
+        closeConfigModalButton.onclick = () => {
+            configModal.style.display = 'none';
+            resetRoomForm(); // Reset form when closing modal entirely
+        }
+        
+        cancelEditButton.onclick = () => {
+            resetRoomForm();
+        }
+
+        function resetRoomForm() {
+            configFormHeader.textContent = 'Neuen Raum hinzufügen';
+            saveRoomButton.textContent = 'Raum hinzufügen';
+            newRoomNameInput.value = '';
+            newRoomCapacityInput.value = '';
+            editingRoomIdInput.value = '';
+            currentlyEditingRoomId = null;
+            cancelEditButton.style.display = 'none';
+        }
+
+        function startEditRoom(roomId) {
+            const roomToEdit = roomDefinitions.find(room => room.id === roomId);
+            if (roomToEdit) {
+                currentlyEditingRoomId = roomId;
+                editingRoomIdInput.value = roomId; // Store in hidden field if needed, or just use global
+                newRoomNameInput.value = roomToEdit.name;
+                newRoomCapacityInput.value = roomToEdit.capacity;
+                configFormHeader.textContent = 'Raum bearbeiten';
+                saveRoomButton.textContent = 'Änderungen speichern';
+                cancelEditButton.style.display = 'inline-block';
+                newRoomNameInput.focus();
+            }
+        }
+        
+        saveRoomButton.onclick = () => {
+            const name = newRoomNameInput.value.trim();
+            const capacity = parseInt(newRoomCapacityInput.value); // Allow 0 capacity
+
+            if (!name) {
+                alert("Bitte geben Sie einen Raumnamen ein."); return;
+            }
+            if (isNaN(capacity) || capacity < 0) { // Capacity can be 0 to "disable" a room
+                alert("Bitte geben Sie eine gültige Kapazität (mindestens 0) ein."); return;
+            }
+
+            if (currentlyEditingRoomId) { // Editing existing room
+                const roomIndex = roomDefinitions.findIndex(room => room.id === currentlyEditingRoomId);
+                if (roomIndex > -1) {
+                    // Check if reducing capacity would make current bookings invalid
+                    let maxBooked = 0;
+                     Object.keys(bookings).forEach(dateStr => {
+                        if(bookings[dateStr][currentlyEditingRoomId]) {
+                            maxBooked = Math.max(maxBooked, bookings[dateStr][currentlyEditingRoomId].length);
+                        }
+                    });
+                    if (capacity < maxBooked && capacity > 0) { // Allow setting to 0 even if booked, effectively closing it.
+                        if (!confirm(`Warnung: Die neue Kapazität (${capacity}) ist geringer als die maximale Anzahl an bestehenden Buchungen (${maxBooked}) für diesen Raum an einigen Tagen. Bestehende Buchungen bleiben erhalten, aber es können keine neuen Buchungen über der neuen Kapazität getätigt werden. Fortfahren?`)) {
+                            return;
+                        }
+                    } else if (capacity === 0 && maxBooked > 0) {
+                         if (!confirm(`Warnung: Sie setzen die Kapazität auf 0. Der Raum wird gesperrt, bestehende Buchungen (${maxBooked}) bleiben aber im System. Fortfahren?`)) {
+                            return;
+                        }
+                    }
+                    roomDefinitions[roomIndex].name = name;
+                    roomDefinitions[roomIndex].capacity = capacity;
+                }
+            } else { // Adding new room
+                const newRoomId = "r" + new Date().getTime();
+                roomDefinitions.push({ id: newRoomId, name: name, capacity: capacity });
+                initializeBookingsForRoom(newRoomId);
+            }
+            resetRoomForm();
+            renderConfigRoomList();
+            renderCalendar();
+        };
+
+
+        function renderConfigRoomList() {
+            configRoomListDiv.innerHTML = '';
+            if (roomDefinitions.length === 0) {
+                configRoomListDiv.innerHTML = '<p>Keine Räume definiert.</p>'; return;
+            }
+            roomDefinitions.forEach(room => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'config-room-list-item';
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = `${room.name} (Kapazität: ${room.capacity})`;
+                itemDiv.appendChild(nameSpan);
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'buttons';
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Bearbeiten';
+                editButton.className = 'modal-button edit-button';
+                editButton.onclick = () => startEditRoom(room.id);
+                buttonsDiv.appendChild(editButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Löschen';
+                deleteButton.className = 'modal-button danger-button';
+                deleteButton.onclick = () => handleDeleteRoom(room.id, room.name);
+                buttonsDiv.appendChild(deleteButton);
+                itemDiv.appendChild(buttonsDiv);
+                
+                configRoomListDiv.appendChild(itemDiv);
+            });
+        }
+
+        function handleDeleteRoom(roomIdToDelete, roomName) {
+             // Check for existing bookings before deleting
+            let hasBookings = false;
+            Object.keys(bookings).forEach(dateStr => {
+                if (bookings[dateStr][roomIdToDelete] && bookings[dateStr][roomIdToDelete].length > 0) {
+                    hasBookings = true;
+                }
+            });
+
+            let confirmMessage = `Möchten Sie den Raum "${roomName}" wirklich löschen?`;
+            if (hasBookings) {
+                confirmMessage += `\n\nAchtung: Für diesen Raum existieren bereits Buchungen. Diese gehen verloren!`;
+            }
+
+            if (confirm(confirmMessage)) {
+                roomDefinitions = roomDefinitions.filter(room => room.id !== roomIdToDelete);
+                Object.keys(bookings).forEach(dateStr => {
+                    if (bookings[dateStr][roomIdToDelete]) delete bookings[dateStr][roomIdToDelete];
+                });
+                if(currentlyEditingRoomId === roomIdToDelete) resetRoomForm(); // If deleting the room currently in edit form
+                renderConfigRoomList();
+                renderCalendar();
+            }
+        }
+
+        window.onclick = function(event) { /* ... (same as V2, for closing modals) ... */
+            if (event.target == errorModal) errorModal.style.display = 'none';
+            if (event.target == configModal) {
+                 // Only close if not clicking on something that should keep it open (e.g. inputs inside)
+                 // A simpler approach: closing configModal also resets the form.
+                 // closeConfigModalButton.onclick already handles this.
+            }
+        }
+        
+        // Initial Setup
+        renderCalendar();
+    </script>
+
+</body>
+</html>

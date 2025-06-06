@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-
+/*
 @main
 struct RaumBuchungssystemApp: App {
     @StateObject private var userStore = UserStore()
@@ -19,3 +19,20 @@ struct RaumBuchungssystemApp: App {
     }
 }
 
+*/
+
+@main
+struct RaumBuchungssystemApp: App {
+    @StateObject private var userStore = UserStore()
+    @StateObject private var roomStore = RoomStore() // Neu
+    @StateObject private var bookingManager = BookingManager() // Neu
+
+    var body: some Scene {
+        WindowGroup {
+            MainView() // Wir erstellen eine neue MainView
+                .environmentObject(userStore)
+                .environmentObject(roomStore) // Neu
+                .environmentObject(bookingManager) // Neu
+        }
+    }
+}
