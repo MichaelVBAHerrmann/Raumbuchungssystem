@@ -16,91 +16,99 @@ struct RoomConfigurationView: View {
     @State private var roomToDelete: Room? = nil
 
     var body: some View {
-        NavigationView {
-            VStack {
-                // MARK: - Formular zum Anlegen/Bearbeiten
-                Form {
-                    Section(header: Text(editingRoom == nil ? "Neuen Raum hinzufügen" : "Raum bearbeiten")) {
-                        TextField("Raumname", text: $name)
-                        
-                        TextField("Kapazität", text: $capacityString)
-                            // --- HIER WURDE DIE SYNTAX AKTUALISIERT ---
-                            .onChange(of: capacityString) { _, newValue in
-                                let filtered = newValue.filter { "0123456789".contains($0) }
-                                if filtered != newValue {
-                                    self.capacityString = filtered
-                                }
-                            }
-                        // --- ENDE DER KORREKTUR ---
-                        
-                        HStack {
-                            Button(action: saveRoom) {
-                                Text(editingRoom == nil ? "Raum hinzufügen" : "Änderungen speichern")
-                            }
-                            .disabled(name.isEmpty || capacityString.isEmpty)
+        // Die Wurzel der Ansicht ist ein einfacher VStack, um fehlerhafte
+        // Navigation-Container zu vermeiden.
+        VStack(spacing: 0) {
+            
+            // Manuell erstellter Header mit Titel und Schließen-Button
+            HStack {
+                Text("Räume konfigurieren")
+                    .font(.title) // Etwas kleiner für eine bessere Passform
+                    .fontWeight(.bold)
+                Spacer()
+                Button("Schließen") {
+                    dismiss()
+                }
+            }
+            .padding()
+            .background(Color(NSColor.windowBackgroundColor)) // Hintergrund für den Header
 
-                            if editingRoom != nil {
-                                Button("Abbrechen") {
-                                    resetForm()
-                                }
-                                .foregroundColor(.red)
+            Divider()
+
+            // Formular zum Anlegen und Bearbeiten von Räumen
+            Form {
+                Section(header: Text(editingRoom == nil ? "Neuen Raum hinzufügen" : "Raum bearbeiten")) {
+                    TextField("Raumname", text: $name)
+                    
+                    TextField("Kapazität", text: $capacityString)
+                        .onChange(of: capacityString) { _, newValue in
+                            let filtered = newValue.filter { "0123456789".contains($0) }
+                            if filtered != newValue {
+                                self.capacityString = filtered
                             }
+                        }
+                    
+                    HStack {
+                        Button(action: {
+                            // Explizite Closure, um Compiler-Probleme zu vermeiden
+                            self.saveRoom()
+                        }) {
+                            Text(editingRoom == nil ? "Hinzufügen" : "Speichern")
+                        }
+                        .disabled(name.isEmpty || capacityString.isEmpty)
+
+                        if editingRoom != nil {
+                            Button("Abbrechen") {
+                                self.resetForm()
+                            }
+                            .foregroundColor(.red)
                         }
                     }
                 }
-                
-                // MARK: - Liste der bestehenden Räume
-                List {
-                    Section(header: Text("Bestehende Räume")) {
-                        if roomStore.rooms.isEmpty {
-                            Text("Keine Räume definiert.")
-                        } else {
-                            ForEach(roomStore.rooms) { room in
-                                roomRow(for: room)
-                            }
-                        }
-                    }
+            }
+            .padding([.horizontal, .top])
+            .frame(height: 150) // Feste Höhe für das Formular
+            
+            Divider()
+
+            // Liste der existierenden Räume
+            List {
+                ForEach(roomStore.rooms) { room in
+                    roomRow(for: room)
                 }
             }
-            .navigationTitle("Räume konfigurieren")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Schließen") {
-                        dismiss()
-                    }
-                }
-            }
-            .alert(isPresented: $showingDeleteAlert) {
-                deleteConfirmationAlert
-            }
+            .listStyle(.inset(alternatesRowBackgrounds: true))
+            
         }
-        .frame(minWidth: 500, idealWidth: 600, minHeight: 400, idealHeight: 600)
+        .frame(minWidth: 500, idealWidth: 600, minHeight: 500, idealHeight: 700)
+        .alert(isPresented: $showingDeleteAlert) {
+            deleteConfirmationAlert
+        }
     }
 
-    // Baut eine Zeile für die Raumliste
     private func roomRow(for room: Room) -> some View {
         HStack {
             Text("\(room.name) (Kapazität: \(room.capacity))")
             Spacer()
             Button("Bearbeiten") {
-                startEditing(room)
+                self.startEditing(room)
             }
+            .buttonStyle(.borderless)
+            
             Button {
                 self.roomToDelete = room
                 self.showingDeleteAlert = true
             } label: {
                 Image(systemName: "trash")
             }
+            .buttonStyle(.borderless)
             .foregroundColor(.red)
         }
+        .padding(.vertical, 4)
     }
     
-    // Alert-Definition für die Löschbestätigung
     private var deleteConfirmationAlert: Alert {
-        guard let room = roomToDelete else {
-            return Alert(title: Text("Fehler"))
-        }
-
+        guard let room = roomToDelete else { return Alert(title: Text("Fehler")) }
         let hasBookings = bookingManager.hasBookings(for: room.id)
         let title = Text("Raum \"\(room.name)\" löschen?")
         var message = Text("Möchten Sie diesen Raum wirklich endgültig löschen?")
@@ -109,11 +117,9 @@ struct RoomConfigurationView: View {
             message = Text("Achtung: Für diesen Raum existieren bereits Buchungen! Diese gehen ebenfalls verloren. Fortfahren?")
         }
 
-        return Alert(
-            title: title,
-            message: message,
+        return Alert(title: title, message: message,
             primaryButton: .destructive(Text("Löschen")) {
-                deleteRoom(room)
+                self.deleteRoom(room)
             },
             secondaryButton: .cancel()
         )
@@ -122,22 +128,16 @@ struct RoomConfigurationView: View {
     // MARK: - Helper Functions
 
     private func saveRoom() {
-        guard let capacity = Int(capacityString), capacity >= 0 else {
-            return
-        }
-
+        guard let capacity = Int(capacityString), capacity >= 0 else { return }
         if let editingRoom = editingRoom {
             var updatedRoom = editingRoom
             updatedRoom.name = name
             updatedRoom.capacity = capacity
-            
             roomStore.updateRoom(room: editingRoom, newName: name, newCapacity: capacity)
             bookingManager.handleRoomCapacityChanged(room: updatedRoom)
-            
         } else {
             roomStore.addRoom(name: name, capacity: capacity)
         }
-        
         resetForm()
     }
 

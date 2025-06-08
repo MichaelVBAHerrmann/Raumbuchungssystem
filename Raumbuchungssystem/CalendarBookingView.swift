@@ -1,45 +1,13 @@
 // CalendarBookingView.swift
 import SwiftUI
 
-// MARK: - Fachliche Funktionalität
-///
-/// Die Hauptansicht der Anwendung für angemeldete Benutzer. Sie stellt eine Kalenderübersicht
-/// dar, in der die verfügbaren Räume für einen 7-Tage-Zeitraum angezeigt werden. Benutzer
-/// können hier Räume für sich buchen oder bestehende eigene Buchungen stornieren.
-///
-// MARK: - Technische Funktionalität
-///
-/// Die Ansicht ist als einfacher `VStack` aufgebaut, um eine einzelne, nicht teilbare Ansicht
-/// zu gewährleisten. Der Hauptinhalt ist eine horizontal scrollbare Liste (`ScrollView`),
-/// die für jeden der 7 Tage eine `DayColumnView` anzeigt.
-/// Ein `DatePicker` erlaubt die Auswahl des Startdatums für die 7-Tage-Ansicht.
-/// Die Logik und Darstellung für einen einzelnen Raum an einem Tag ist in die `RoomRowView` ausgelagert.
-/// Die Ansicht greift per `@EnvironmentObject` auf alle drei zentralen Daten-Manager zu.
-///
-// MARK: - Besonderheiten
-///
-/// - **Keine NavigationView:** Die `NavigationView` wurde bewusst entfernt, um die automatische
-///   Split-View-Darstellung auf macOS zu verhindern. Titel und Aktionen (Logout) sind
-///   manuell im Layout platziert.
-/// - **Komponenten-Struktur:** Die Ansicht ist in mehrere kleinere, spezialisierte Sub-Views
-///   (`DayColumnView`, `RoomRowView`) unterteilt, was den Code übersichtlich und wartbar macht.
-///
-// MARK: - Zusammenspiel und Abhängigkeiten
-///
-/// - **Wird aufgerufen von:** `MainView`, sobald ein Benutzer erfolgreich angemeldet ist.
-/// - **Abhängigkeiten:**
-///   - `UserStore`: Um den Namen des angemeldeten Benutzers anzuzeigen und die Benutzer-ID für Buchungen zu erhalten.
-///   - `RoomStore`: Um die Liste aller verfügbaren Räume zu erhalten und anzuzeigen.
-///   - `BookingManager`: Um Buchungen zu erstellen, zu stornieren und den aktuellen Buchungsstatus für jeden Raum abzufragen.
-///
-
 struct CalendarBookingView: View {
     @EnvironmentObject var userStore: UserStore
     @EnvironmentObject var roomStore: RoomStore
     @EnvironmentObject var bookingManager: BookingManager
 
     @State private var selectedDate = Date()
-    @State private var showingConfigurationSheet = false // Steuert die Sichtbarkeit des Sheets
+    @State private var showingConfigurationSheet = false
     @State private var showingAlert = false
     @State private var alertMessage = ""
 
@@ -48,17 +16,14 @@ struct CalendarBookingView: View {
     }
 
     var body: some View {
-        // --- HIER WURDE DIE NAVIGATIONVIEW ENTFERNT ---
-        // Ein einfacher VStack ist nun die Wurzel, um die Split-View zu verhindern.
         VStack(alignment: .leading, spacing: 0) {
             
-            // Der Titel und die obere Leiste wurden manuell nachgebaut.
+            // Manuell erstellter Header für eine konsistente UI
             VStack(alignment: .leading) {
                 Text("Raumbuchungssystem")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 
-                // Header: Datumsauswahl und Konfigurationsbutton
                 HStack {
                     DatePicker("Datum wählen", selection: $selectedDate, displayedComponents: .date)
                         .labelsHidden()
@@ -81,7 +46,6 @@ struct CalendarBookingView: View {
                         Text("Räume")
                     }
                     
-                    // Der Logout-Button wurde aus der Toolbar hierher verschoben.
                     Button("Logout") {
                         userStore.logout()
                     }
@@ -100,9 +64,8 @@ struct CalendarBookingView: View {
                 }
                 .padding(.horizontal)
             }
-            Spacer() // Füllt den restlichen vertikalen Platz
+            Spacer()
         }
-        // --- ENDE DER ÄNDERUNG ---
         .sheet(isPresented: $showingConfigurationSheet) {
             RoomConfigurationView()
         }
@@ -113,15 +76,15 @@ struct CalendarBookingView: View {
     }
 }
 
-// Die untergeordneten Views (DayColumnView, RoomRowView) bleiben unverändert.
 
+// Sub-Views bleiben unverändert
 struct DayColumnView: View {
     @EnvironmentObject var roomStore: RoomStore
     @EnvironmentObject var bookingManager: BookingManager
     @EnvironmentObject var userStore: UserStore
 
     let date: Date
-
+    
     @State private var showingBookingAlert = false
     @State private var bookingAlertMessage = ""
 
@@ -164,13 +127,13 @@ struct RoomRowView: View {
 
     let room: Room
     let date: Date
-
+    
     @State private var showBookedUsersPopover = false
 
     private var bookedUserIDs: [UUID] {
         bookingManager.getBookedUserIDs(for: room.id, on: date)
     }
-
+    
     private var bookedUsernames: [String] {
         bookedUserIDs.compactMap { userStore.getUsername(by: $0) }
     }
@@ -178,7 +141,7 @@ struct RoomRowView: View {
     private var availableSeats: Int {
         room.capacity - bookedUserIDs.count
     }
-
+    
     private var isCurrentUserBooked: Bool {
         if let currentUserID = userStore.currentUser?.id {
             return bookedUserIDs.contains(currentUserID)
@@ -189,7 +152,7 @@ struct RoomRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(room.name).font(.title3)
-
+            
             HStack {
                 Text("Kapazität: \(room.capacity)")
                 Spacer()
@@ -220,10 +183,11 @@ struct RoomRowView: View {
                     .foregroundColor(.gray)
             }
 
+
             if room.capacity > 0 {
                 Button {
                     guard let currentUser = userStore.currentUser else { return }
-
+                    
                     if isCurrentUserBooked {
                         bookingManager.cancelBooking(roomID: room.id, date: date, userID: currentUser.id)
                     } else {
