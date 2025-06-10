@@ -1,6 +1,4 @@
-// BookingManager.swift
-import Foundation
-import Combine
+
 
 // MARK: - Fachliche Funktionalität
 ///
@@ -39,160 +37,86 @@ import Combine
 ///   - `User`: Benötigt die `id` des Benutzers aus dem `UserStore` für die Zuordnung von Buchungen.
 ///
 
-struct NormalizedDateKey: Codable, Hashable, Comparable {
-    let year: Int
-    let month: Int
-    let day: Int
+// Booking.swift
+import Foundation
+import FirebaseFirestore
 
-    init(date: Date) {
-        let calendar = Calendar.current
-        self.year = calendar.component(.year, from: date)
-        self.month = calendar.component(.month, from: date)
-        self.day = calendar.component(.day, from: date)
-    }
-
-    static func < (lhs: NormalizedDateKey, rhs: NormalizedDateKey) -> Bool {
-        if lhs.year != rhs.year { return lhs.year < rhs.year }
-        if lhs.month != rhs.month { return lhs.month < rhs.month }
-        return lhs.day < rhs.day
-    }
+struct Booking: Identifiable, Codable {
+    @DocumentID var id: String?
+    var roomId: String
+    var userId: String
+    var userEmail: String // Nützlich für die Anzeige
+    var date: Timestamp // Firestore-Datumsformat
 }
 
+// BookingManager.swift
+import Foundation
+import FirebaseFirestore
+
+@MainActor
 final class BookingManager: ObservableObject {
-    @Published private(set) var bookingsByDateRoom: [NormalizedDateKey: [UUID: [UUID]?]] = [:]
-    private let bookingsKey = "roomBookings"
+    @Published private(set) var bookings: [Booking] = []
+    private let db = Firestore.firestore()
 
     init() {
-        loadBookings()
-    }
-    
-    // MARK: - Public API
-
-    /// Prüft, ob für einen bestimmten Raum irgendwelche Buchungen existieren.
-    /// - Parameter roomID: Die ID des zu prüfenden Raumes.
-    /// - Returns: `true`, wenn mindestens eine Buchung für diesen Raum existiert, sonst `false`.
-    func hasBookings(for roomID: UUID) -> Bool {
-        for (_, roomBookings) in bookingsByDateRoom {
-            if let userList = roomBookings[roomID], let users = userList, !users.isEmpty {
-                return true
-            }
-        }
-        return false
+        // Man könnte hier alle Buchungen laden, aber es ist effizienter,
+        // sie nur bei Bedarf für das ausgewählte Datum zu laden.
     }
 
-    func getBookedUserIDs(for roomID: UUID, on date: Date) -> [UUID] {
-        let key = NormalizedDateKey(date: date)
-        return bookingsByDateRoom[key]?[roomID, default: nil] ?? []
-    }
-
-    func bookRoom(room: Room, date: Date, userID: UUID) -> Bool {
-        guard room.capacity > 0 else { return false }
-        let key = NormalizedDateKey(date: date)
-        
-        var bookingsForDate = bookingsByDateRoom[key, default: [:]]
-        var currentUserList = (bookingsForDate[room.id] ?? nil) ?? []
-
-        guard currentUserList.count < room.capacity else {
-            return false
-        }
-
-        if !currentUserList.contains(userID) {
-            currentUserList.append(userID)
-            bookingsForDate[room.id] = currentUserList
-            bookingsByDateRoom[key] = bookingsForDate
-            saveBookings()
-            return true
-        }
-        return false
-    }
-
-    func cancelBooking(roomID: UUID, date: Date, userID: UUID) {
-        let key = NormalizedDateKey(date: date)
-        
-        guard var bookingsForDate = bookingsByDateRoom[key] else { return }
-        
-        guard let userListOptional = bookingsForDate[roomID],
-              var userList = userListOptional
-        else {
+    // Lädt Buchungen für einen bestimmten Datumsbereich
+    func fetchBookings(for dates: [Date]) {
+        guard !dates.isEmpty else {
+            self.bookings = []
             return
         }
+        
+        let calendar = Calendar.current
+        let startOfFirstDay = calendar.startOfDay(for: dates.first!)
+        let startOfNextDay = calendar.date(byAdding: .day, value: 1, to: dates.last!)!
+        let endOfLastDay = calendar.startOfDay(for: startOfNextDay)
 
-        if let index = userList.firstIndex(of: userID) {
-            userList.remove(at: index)
-            
-            bookingsForDate[roomID] = userList.isEmpty ? nil : userList
-            
-            if bookingsForDate.allSatisfy({ $0.value == nil }) {
-                bookingsByDateRoom[key] = nil
-            } else {
-                bookingsByDateRoom[key] = bookingsForDate
-            }
-            saveBookings()
-        }
-    }
-
-    func handleRoomDeleted(roomID: UUID) {
-        for dateKey in bookingsByDateRoom.keys {
-            if var bookingsOnDate = bookingsByDateRoom[dateKey] {
-                bookingsOnDate.removeValue(forKey: roomID)
+        db.collection("bookings")
+            .whereField("date", isGreaterThanOrEqualTo: startOfFirstDay)
+            .whereField("date", isLessThan: endOfLastDay)
+            .addSnapshotListener { querySnapshot, error in
+                guard let documents = querySnapshot?.documents else {
+                    print("Error fetching bookings: \(error?.localizedDescription ?? "unknown")")
+                    return
+                }
                 
-                if bookingsOnDate.isEmpty || bookingsOnDate.allSatisfy({ $0.value == nil }) {
-                    bookingsByDateRoom[dateKey] = nil
-                } else {
-                    bookingsByDateRoom[dateKey] = bookingsOnDate
-                }
+                self.bookings = documents.compactMap { try? $0.data(as: Booking.self) }
             }
-        }
-        saveBookings()
-    }
-    
-    func handleRoomCapacityChanged(room: Room) {
-        for dateKey in bookingsByDateRoom.keys {
-            if var bookingsOnDate = bookingsByDateRoom[dateKey] {
-                
-                if bookingsOnDate[room.id] != nil {
-                    if var currentUserIDs = bookingsOnDate[room.id] ?? nil {
-                        
-                        if room.capacity == 0 {
-                            currentUserIDs = []
-                        } else if currentUserIDs.count > room.capacity {
-                            let numberToRemove = currentUserIDs.count - room.capacity
-                            if numberToRemove > 0 {
-                                currentUserIDs.removeLast(numberToRemove)
-                            }
-                        }
-                        
-                        bookingsOnDate[room.id] = currentUserIDs.isEmpty ? nil : currentUserIDs
-                    }
-                } else if room.capacity == 0 && bookingsOnDate.keys.contains(room.id) {
-                     bookingsOnDate[room.id] = nil
-                }
-
-                if bookingsOnDate.isEmpty || bookingsOnDate.allSatisfy({ $0.value == nil }) {
-                    bookingsByDateRoom[dateKey] = nil
-                } else {
-                    bookingsByDateRoom[dateKey] = bookingsOnDate
-                }
-            }
-        }
-        saveBookings()
     }
 
-    // MARK: - Persistence
-    
-    private func loadBookings() {
-        guard let data = UserDefaults.standard.data(forKey: bookingsKey),
-              let decodedBookings = try? JSONDecoder().decode([NormalizedDateKey: [UUID: [UUID]?]].self, from: data)
-        else {
-            self.bookingsByDateRoom = [:]
-            return
+    func getBookings(for roomId: String, on date: Date) -> [Booking] {
+        let calendar = Calendar.current
+        return bookings.filter { booking in
+            return booking.roomId == roomId && calendar.isDate(booking.date.dateValue(), inSameDayAs: date)
         }
-        self.bookingsByDateRoom = decodedBookings
     }
 
-    private func saveBookings() {
-        if let data = try? JSONEncoder().encode(bookingsByDateRoom) {
-            UserDefaults.standard.set(data, forKey: bookingsKey)
+    func bookRoom(room: Room, date: Date, user: User) async {
+        guard let roomId = room.id else { return }
+        
+        let newBooking = Booking(
+            roomId: roomId,
+            userId: user.id,
+            userEmail: user.email,
+            date: Timestamp(date: date)
+        )
+        
+        do {
+            _ = try await db.collection("bookings").addDocument(from: newBooking)
+        } catch {
+            print("Error creating booking: \(error.localizedDescription)")
+        }
+    }
+
+    func cancelBooking(for bookingId: String) async {
+        do {
+            try await db.collection("bookings").document(bookingId).delete()
+        } catch {
+            print("Error cancelling booking: \(error.localizedDescription)")
         }
     }
 }

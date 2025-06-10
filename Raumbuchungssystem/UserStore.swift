@@ -1,106 +1,95 @@
-// UserStore.swift
-// MARK: - Fachliche Funktionalität
-///
-/// Dient als zentraler Daten-Manager für alle benutzerbezogenen Informationen und Aktionen.
-/// Er verwaltet die Liste aller registrierten Benutzer, kümmert sich um die Logik für
-/// Registrierung, Login und Logout und hält den aktuell angemeldeten Benutzer als
-/// "Source of Truth" (alleinige Wahrheitsquelle) für die gesamte App vor.
-///
-// MARK: - Technische Funktionalität
-///
-/// Ein als `final class` deklarierter `ObservableObject`. Er publiziert Änderungen an seinen
-/// `@Published` Properties (`users`, `currentUser`), wodurch SwiftUI-Views, die ihn beobachten,
-/// automatisch neu gerendert werden (z.B. bei Login/Logout).
-/// Benutzerdaten werden zur Persistenz mittels `JSONEncoder` in `UserDefaults` als JSON gespeichert
-/// und beim App-Start mit `JSONDecoder` wieder geladen.
-///
-// MARK: - Besonderheiten
-///
-/// - **Sicherheitshinweis:** In dieser Implementierung werden Passwörter zur Vereinfachung als
-///   Klartext-Strings in den `UserDefaults` gespeichert. In einer produktiven Anwendung ist dies
-///   ein Sicherheitsrisiko. Passwörter sollten stattdessen sicher gehasht (z.B. mit Argon2, bcrypt)
-///   und idealerweise im `Keychain` des Systems gespeichert werden.
-///
-// MARK: - Zusammenspiel und Abhängigkeiten
-///
-/// - **Wird initialisiert von:** `RaumbuchungssystemApp` und als `@EnvironmentObject` bereitgestellt.
-/// - **Wird genutzt von:**
-///   - `MainView`: Um basierend auf `currentUser` die korrekte Ansicht (Login vs. Haupt-App) anzuzeigen.
-///   - `LoginForm`: Ruft `login()` auf, um die Anmeldedaten zu überprüfen.
-///   - `CalendarBookingView`: Liest den `currentUser` für Anzeigenamen und Buchungs-IDs und ruft `getUsername(by:)` auf.
-///   - `RegistrationForm` (indirekt): Die in der `RegistrationForm` erfassten Daten werden verwendet, um `register()` aufzurufen.
-///
-
-
-
+// User.swift
 import Foundation
-import Combine
 
-/// Einfaches User-Modell
-struct User: Codable, Identifiable, Equatable { // Codable, Identifiable, Equatable sind bereits vorhanden
-    let id: UUID
-    let username: String
-    // Das Passwort sollte im echten Produkt sicher gehasht und in der Keychain gespeichert werden.
-    // Für dieses Beispiel belassen wir es als String, wie in deiner Originaldatei.
-    let password: String
+// Das User-Modell repräsentiert nun den angemeldeten Benutzer.
+// Das Passwort wird nicht mehr hier gespeichert.
+struct User: Identifiable, Equatable {
+    let id: String // Firebase UID ist ein String
+    let email: String
 }
 
-/// Verantwortlich für Registrieren, Login und Speichern
-final class UserStore: ObservableObject {
-    @Published private(set) var users: [User] = []
-    @Published var currentUser: User? = nil
+// UserStore.swift
+import Foundation
+import FirebaseAuth
 
-    private let key = "registeredUsers"
+final class UserStore: ObservableObject {
+    @Published var currentUser: User?
+    @Published var authError: String?
+    @Published var isLoading = false
+
+    private var handle: AuthStateDidChangeListenerHandle?
 
     init() {
-        load()
-    }
+        // Lausche auf Änderungen des Anmeldestatus
+        handle = Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
+            guard let self = self else { return }
+            
+            self.isLoading = true
+            defer { self.isLoading = false }
 
-    private func load() {
-        guard let data = UserDefaults.standard.data(forKey: key),
-              let decoded = try? JSONDecoder().decode([User].self, from: data)
-        else { return }
-        users = decoded
-    }
-
-    private func save() {
-        if let data = try? JSONEncoder().encode(users) {
-            UserDefaults.standard.set(data, forKey: key)
+            if let firebaseUser = firebaseUser {
+                self.currentUser = User(id: firebaseUser.uid, email: firebaseUser.email ?? "")
+            } else {
+                self.currentUser = nil
+            }
         }
     }
 
-    /// Registriert einen neuen User. Gibt false zurück, wenn der Username schon existiert.
-    func register(username: String, password: String) -> Bool {
-        guard !users.contains(where: { $0.username == username }) else {
-            return false
+    deinit {
+        // Listener entfernen, wenn der Store zerstört wird
+        if let handle = handle {
+            Auth.auth().removeStateDidChangeListener(handle)
         }
-        let newUser = User(id: UUID(), username: username, password: password)
-        users.append(newUser)
-        save()
-        currentUser = newUser // Optional: Nach Registrierung direkt einloggen
-        return true
     }
 
-    /// Prüft Login-Daten: true, wenn username+passwort stimmen.
-    func login(username: String, password: String) -> Bool {
-        guard let u = users.first(where: { $0.username == username && $0.password == password })
-        else {
-            currentUser = nil // Sicherstellen, dass currentUser bei Fehlversuch nil ist
-            return false
+    func register(email: String, password: String) async {
+        await MainActor.run {
+            self.isLoading = true
+            self.authError = nil
         }
-        currentUser = u
-        return true
+        
+        do {
+            try await Auth.auth().createUser(withEmail: email, password: password)
+            // Der StateDidChangeListener wird automatisch den currentUser setzen
+        } catch {
+            await MainActor.run {
+                self.authError = error.localizedDescription
+            }
+        }
+        
+        await MainActor.run {
+            self.isLoading = false
+        }
     }
 
-    /// Abmelden
+    func login(email: String, password: String) async {
+        await MainActor.run {
+            self.isLoading = true
+            self.authError = nil
+        }
+        
+        do {
+            try await Auth.auth().signIn(withEmail: email, password: password)
+            // Der StateDidChangeListener wird automatisch den currentUser setzen
+        } catch {
+            await MainActor.run {
+                self.authError = error.localizedDescription
+            }
+        }
+        
+        await MainActor.run {
+            self.isLoading = false
+        }
+    }
+
     func logout() {
-        currentUser = nil
-        // Hier könnten weitere Aufräumarbeiten stattfinden, falls nötig
+        do {
+            try Auth.auth().signOut()
+        } catch {
+            self.authError = error.localizedDescription
+        }
     }
-
-    // KORRIGIERT: Funktion ist jetzt korrekt innerhalb der Klasse platziert
-    /// Gibt den Benutzernamen für eine gegebene User-ID zurück.
-    func getUsername(by id: UUID) -> String? {
-        return users.first(where: { $0.id == id })?.username
-    }
+    
+    // Diese Funktion wird nicht mehr benötigt, da die User-Infos direkt im currentUser sind.
+    // Man könnte sie erweitern, um User-Profile aus Firestore zu laden.
 }

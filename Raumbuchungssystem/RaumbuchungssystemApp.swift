@@ -32,20 +32,39 @@
 ///   initialisiert diese aber.
 ///
 
+//
+//  RaumbuchungssystemApp.swift
+//  Raumbuchungssystem
+//
+//  Created by Michael Herrmann on 26.05.25.
+//
+
 import SwiftUI
+import FirebaseCore
+
+// AppDelegate, um Firebase zu konfigurieren
+class AppDelegate: NSObject, NSApplicationDelegate {
+  func applicationDidFinishLaunching(_ aNotification: Notification) {
+    FirebaseApp.configure()
+  }
+}
 
 @main
 struct RaumBuchungssystemApp: App {
+    // Registriere den AppDelegate für die App-Lebenszyklus-Events
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+
     @StateObject private var userStore = UserStore()
-    @StateObject private var roomStore = RoomStore() // Neu
-    @StateObject private var bookingManager = BookingManager() // Neu
+    @StateObject private var roomStore = RoomStore()
+    @StateObject private var bookingManager = BookingManager()
 
     var body: some Scene {
         WindowGroup {
-            MainView() // Wir erstellen eine neue MainView
+            MainView()
                 .environmentObject(userStore)
-                .environmentObject(roomStore) // Neu
-                .environmentObject(bookingManager) // Neu
+                .environmentObject(roomStore)
+                .environmentObject(bookingManager)
         }
     }
 }
+

@@ -33,61 +33,67 @@
 ///
 
 
+// Room.swift
 import Foundation
-import Combine
+import FirebaseFirestore
 
+// Das Room-Modell wird für Firestore vorbereitet.
+struct Room: Identifiable, Codable, Hashable {
+    @DocumentID var id: String? // Firestore-Dokumenten-ID
+    var name: String
+    var capacity: Int
+}
+
+// RoomStore.swift
+import Foundation
+import FirebaseFirestore
+
+@MainActor
 final class RoomStore: ObservableObject {
     @Published private(set) var rooms: [Room] = []
-
-    private let roomsKey = "roomDefinitions"
+    private let db = Firestore.firestore()
 
     init() {
-        loadRooms()
+        fetchRooms()
     }
 
-    func loadRooms() {
-        guard let data = UserDefaults.standard.data(forKey: roomsKey),
-              let decodedRooms = try? JSONDecoder().decode([Room].self, from: data)
-        else {
-            // Standardräume laden, falls keine gespeichert sind (optional)
-            self.rooms = [
-                Room(name: "Konferenzraum Alpha", capacity: 3),
-                Room(name: "Meetingraum Beta", capacity: 2),
-                Room(name: "Projektraum Gamma", capacity: 5)
-            ]
-            saveRooms()
-            return
-        }
-        self.rooms = decodedRooms
-    }
+    func fetchRooms() {
+        db.collection("rooms").order(by: "name").addSnapshotListener { querySnapshot, error in
+            guard let documents = querySnapshot?.documents else {
+                print("Error fetching documents: \(error?.localizedDescription ?? "unknown error")")
+                return
+            }
 
-    private func saveRooms() {
-        if let data = try? JSONEncoder().encode(rooms) {
-            UserDefaults.standard.set(data, forKey: roomsKey)
+            self.rooms = documents.compactMap { document in
+                try? document.data(as: Room.self)
+            }
         }
     }
 
     func addRoom(name: String, capacity: Int) {
         let newRoom = Room(name: name, capacity: capacity)
-        rooms.append(newRoom)
-        saveRooms()
-    }
-
-    func updateRoom(room: Room, newName: String, newCapacity: Int) {
-        if let index = rooms.firstIndex(where: { $0.id == room.id }) {
-            rooms[index].name = newName
-            rooms[index].capacity = newCapacity
-            saveRooms()
+        do {
+            _ = try db.collection("rooms").addDocument(from: newRoom)
+        } catch {
+            print("Error adding room: \(error.localizedDescription)")
         }
     }
 
-    func deleteRoom(room: Room) {
-        rooms.removeAll { $0.id == room.id }
-        saveRooms()
+    func updateRoom(_ room: Room) {
+        guard let roomId = room.id else { return }
+        do {
+            try db.collection("rooms").document(roomId).setData(from: room)
+        } catch {
+            print("Error updating room: \(error.localizedDescription)")
+        }
     }
-    
-    func deleteRoom(at offsets: IndexSet) {
-        rooms.remove(atOffsets: offsets)
-        saveRooms()
+
+    func deleteRoom(_ room: Room) {
+        guard let roomId = room.id else { return }
+        db.collection("rooms").document(roomId).delete { error in
+            if let error = error {
+                print("Error deleting room: \(error.localizedDescription)")
+            }
+        }
     }
 }
